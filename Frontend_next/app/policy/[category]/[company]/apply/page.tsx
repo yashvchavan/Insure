@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { toast } from "react-toastify"
+
 import { useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
@@ -16,27 +16,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { FileUploader } from "@/components/FileUploader"
 import { CheckCircle, ChevronLeft, ChevronRight, FileText, Info } from "lucide-react"
 
-import axios from "axios"
-
-
 export default function ApplyPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { category, company } = params || {}
-  
-  // Fix: company parameter is actually the policy ID in the URL
-  const policyId = company as string
-
-  // Initialize newFormData as an object
-  const [newFormData, setNewFormData] = useState<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    // ... add other form fields as needed
-    files?: File[];
-  }>({});
+  const policyId = searchParams ? searchParams.get("policy") : null
 
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
@@ -79,19 +63,21 @@ export default function ApplyPage() {
   const [files, setFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  
 
   const handleInputChange = (field: string, value: string | boolean | File | null | File[]) => {
-    setNewFormData((prev) => ({
-      ...prev,
+    setFormData({
+      ...formData,
       [field]: value,
-    }));
-    console.log("new form data", newFormData);
-  };
+    })
+  }
 
   const handleFileUpload = (newFiles: File[]) => {
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  };
+    setFiles([...files, ...newFiles])
+    setFormData({
+      ...formData,
+      additionalDocuments: [...files, ...newFiles],
+    })
+  }
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1)
@@ -103,72 +89,20 @@ export default function ApplyPage() {
     window.scrollTo(0, 0)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!policyId) {
-      toast.error("No policy selected");
-      router.push(`/policy/${category}`);
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
 
-    setIsSubmitting(true);
-
-    try {
-      // Create FormData instance
-      const formData = new FormData();
-      
-      // Append all non-file form data
-      Object.entries(newFormData).forEach(([key, value]) => {
-        if (key !== 'files') {
-          formData.append(key, value as string);
-        }
-      });
-      
-      // Append files with the correct field name "files"
-      if (files && files.length > 0) {
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
-      }
-
-      const response = await axios.post(
-        `http://localhost:4000/api/v1/users/purchase/purchase-policy/${policyId}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: { 
-            "Content-Type": "multipart/form-data"
-          },
-        }
-      );
-      
-      if (response.data.success) {
-        toast.success("Application submitted successfully");
-        setIsSubmitted(true);
-      } else {
-        toast.error(response.data.message || "Failed to submit application");
-      }
-    } catch (error: any) {
-      console.error("Error submitting application:", error);
-      toast.error(error.response?.data?.message || "Failed to submit application");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false)
+      setIsSubmitted(true)
+    }, 2000)
+  }
 
   const handleGoToConfirmation = () => {
     router.push("/policy/confirmation")
   }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    
-    if (!selectedFiles) return;
-
-    const newFiles = Array.from(selectedFiles);
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  };
 
   return (
     <div className="container mx-auto py-12 px-4">
@@ -210,7 +144,7 @@ export default function ApplyPage() {
               <Button variant="ghost" className="mb-4" onClick={() => router.back()}>
                 <ChevronLeft className="mr-2 h-4 w-4" /> Back
               </Button>
-              
+
               <h1 className="text-3xl font-bold mb-2">Apply for Insurance</h1>
               <p className="text-muted-foreground mb-6">
                 Complete the application form below to apply for your selected insurance policy.
@@ -562,7 +496,6 @@ export default function ApplyPage() {
                             acceptedFileTypes={[".pdf", ".jpg", ".jpeg", ".png"]}
                             maxFileSizeMB={5}
                           />
-                          <input type="file" name="files" id="" onChange={handleFileChange}  />
                         </div>
                       </div>
 
@@ -576,15 +509,11 @@ export default function ApplyPage() {
                             </p>
                           </div>
                           <FileUploader
-                            onFilesSelected={(files) => { if (files.length > 0) {
-                              handleInputChange("proofOfIncome", files[0]); // Only update if a file is selected
-                            }
-                          }}
+                            onFilesSelected={(files) => handleInputChange("proofOfIncome", files[0])}
                             maxFiles={1}
                             acceptedFileTypes={[".pdf", ".jpg", ".jpeg", ".png"]}
                             maxFileSizeMB={5}
                           />
-                            <input type="file" name="" id="" onChange={handleFileChange}  />
                         </div>
                       </div>
 
@@ -623,7 +552,7 @@ export default function ApplyPage() {
                         </div>
                       )}
 
-                      {/* <div className="space-y-4 pt-4">
+                      <div className="space-y-4 pt-4">
                         <div className="flex items-start space-x-2">
                           <Checkbox
                             id="agreeToTerms"
@@ -670,7 +599,7 @@ export default function ApplyPage() {
                             </p>
                           </div>
                         </div>
-                      </div> */}
+                      </div>
                     </div>
                   )}
                 </form>
@@ -689,7 +618,7 @@ export default function ApplyPage() {
                     Next <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button onClick={handleSubmit} >
+                  <Button onClick={handleSubmit} disabled={isSubmitting || !formData.agreeToTerms}>
                     {isSubmitting ? "Submitting..." : "Submit Application"}
                   </Button>
                 )}
@@ -701,3 +630,4 @@ export default function ApplyPage() {
     </div>
   )
 }
+

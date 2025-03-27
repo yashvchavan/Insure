@@ -7,9 +7,13 @@ const useAuth = create(
   persist(
     (set: any) => ({
       user: null,
+      email:null,
       isAuthenticated: false,
       useAuthlogin: (newUser: any) => {
-        set({ user: newUser, isAuthenticated: true });
+        set({ user: newUser,email:newUser.email, isAuthenticated: true });
+      },
+      adminEmail:(Email: any)=>{
+        set({email:Email});   
       },
       useAuthlogout: () => {
         // sessionStorage.removeItem("auth-storage");

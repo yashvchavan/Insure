@@ -1,28 +1,13 @@
 "use client"
-//import { useEffect, useState } from "react"
+
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Star, Shield, Award, CheckCircle } from "lucide-react"
-import { useEffect, useState } from "react"
 
 // Insurance category data
-
-// useEffect(() => {
-//   const fetchCompanies = async () => {
-//     const res = await axios.get("http://localhost:4000/api/v1/users/policies",
-//       {
-//         withCredentials: true
-//       }
-//     );
-   
-//     setCompanies(res.data.data.allPolicies);
-//     fetchCompanies();
-//   }, [])
-//   fetchCompanies();
-// };
 const categoryData = {
   health: {
     title: "Health Insurance",
@@ -31,39 +16,39 @@ const categoryData = {
     color: "from-red-500 to-pink-500",
     companies: [
       {
-        id: "health-secure",
-        name: "HealthSecure",
+        id: "acme-health",
+        name: "Acme Health Insurance",
         rating: 4.8,
-        featuredPolicy: "Comprehensive Health Coverage",
-        coverage: "Full",
-        startingAt: "₹100/month",
+        featuredPolicy: "Gold Health Plan",
+        coverage: "$1M",
+        startingAt: "$120/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
-        id: "medicare-plus",
-        name: "MedicarePlus",
-        rating: 4.7,
-        featuredPolicy: "Premium Health Plan",
-        coverage: "Full + Extras",
-        startingAt: "₹120/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "health-guard",
-        name: "HealthGuard",
+        id: "global-care",
+        name: "Global Care",
         rating: 4.6,
-        featuredPolicy: "Basic Health Insurance",
-        coverage: "Standard",
-        startingAt: "₹80/month",
+        featuredPolicy: "Family Health Shield",
+        coverage: "$750K",
+        startingAt: "$95/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
-        id: "wellness-protect",
-        name: "WellnessProtect",
-        rating: 4.9,
-        featuredPolicy: "Elite Health Protection",
-        coverage: "Premium",
-        startingAt: "₹150/month",
+        id: "medisure",
+        name: "MediSure",
+        rating: 4.7,
+        featuredPolicy: "Premium Health Coverage",
+        coverage: "$1.2M",
+        startingAt: "$150/month",
+        image: "/placeholder.svg?height=80&width=80",
+      },
+      {
+        id: "healthguard",
+        name: "HealthGuard",
+        rating: 4.5,
+        featuredPolicy: "Essential Health Plan",
+        coverage: "$500K",
+        startingAt: "$85/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -80,7 +65,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Comprehensive Auto Coverage",
         coverage: "Full",
-        startingAt: "₹80/month",
+        startingAt: "$80/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -89,7 +74,7 @@ const categoryData = {
         rating: 4.5,
         featuredPolicy: "Premium Vehicle Protection",
         coverage: "Full + Extras",
-        startingAt: "₹95/month",
+        startingAt: "$95/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -98,7 +83,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Basic Auto Insurance",
         coverage: "Standard",
-        startingAt: "₹65/month",
+        startingAt: "$65/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -107,7 +92,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Elite Auto Protection",
         coverage: "Premium",
-        startingAt: "₹110/month",
+        startingAt: "$110/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -123,8 +108,8 @@ const categoryData = {
         name: "LifeSecure",
         rating: 4.9,
         featuredPolicy: "Term Life Premium",
-        coverage: "₹2M",
-        startingAt: "₹150/month",
+        coverage: "$2M",
+        startingAt: "$150/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -132,8 +117,8 @@ const categoryData = {
         name: "FamilyProtect",
         rating: 4.7,
         featuredPolicy: "Whole Life Coverage",
-        coverage: "₹1.5M",
-        startingAt: "₹180/month",
+        coverage: "$1.5M",
+        startingAt: "$180/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -141,8 +126,8 @@ const categoryData = {
         name: "FutureGuard",
         rating: 4.6,
         featuredPolicy: "Universal Life Plan",
-        coverage: "₹1M",
-        startingAt: "₹120/month",
+        coverage: "$1M",
+        startingAt: "$120/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -150,8 +135,8 @@ const categoryData = {
         name: "Legacy Life Insurance",
         rating: 4.8,
         featuredPolicy: "Premium Life Protection",
-        coverage: "₹3M",
-        startingAt: "₹200/month",
+        coverage: "$3M",
+        startingAt: "$200/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -168,7 +153,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Complete Home Protection",
         coverage: "Full Replacement",
-        startingAt: "₹90/month",
+        startingAt: "$90/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -177,7 +162,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Premium Property Coverage",
         coverage: "Full + Contents",
-        startingAt: "₹110/month",
+        startingAt: "$110/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -186,7 +171,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Elite Home Insurance",
         coverage: "Comprehensive",
-        startingAt: "₹130/month",
+        startingAt: "$130/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -195,7 +180,7 @@ const categoryData = {
         rating: 4.5,
         featuredPolicy: "Basic Home Coverage",
         coverage: "Standard",
-        startingAt: "₹75/month",
+        startingAt: "$75/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -212,7 +197,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Global Travel Protection",
         coverage: "Comprehensive",
-        startingAt: "₹25/trip",
+        startingAt: "$25/trip",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -221,7 +206,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Premium Travel Coverage",
         coverage: "Premium",
-        startingAt: "₹35/trip",
+        startingAt: "$35/trip",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -230,7 +215,7 @@ const categoryData = {
         rating: 4.5,
         featuredPolicy: "Basic Travel Insurance",
         coverage: "Standard",
-        startingAt: "₹15/trip",
+        startingAt: "$15/trip",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -239,7 +224,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Elite Travel Shield",
         coverage: "All-Inclusive",
-        startingAt: "₹45/trip",
+        startingAt: "$45/trip",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -256,7 +241,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Complete Business Protection",
         coverage: "Comprehensive",
-        startingAt: "₹200/month",
+        startingAt: "$200/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -265,7 +250,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Premium Business Coverage",
         coverage: "Full + Liability",
-        startingAt: "₹250/month",
+        startingAt: "$250/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -274,7 +259,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Standard Business Insurance",
         coverage: "Basic",
-        startingAt: "₹150/month",
+        startingAt: "$150/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -283,7 +268,7 @@ const categoryData = {
         rating: 4.9,
         featuredPolicy: "Elite Business Shield",
         coverage: "All-Inclusive",
-        startingAt: "₹300/month",
+        startingAt: "$300/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -300,7 +285,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Complete Pet Protection",
         coverage: "Comprehensive",
-        startingAt: "₹30/month",
+        startingAt: "$30/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -309,7 +294,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Premium Pet Coverage",
         coverage: "Full + Wellness",
-        startingAt: "₹40/month",
+        startingAt: "$40/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -318,7 +303,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Basic Pet Insurance",
         coverage: "Standard",
-        startingAt: "₹20/month",
+        startingAt: "$20/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -327,7 +312,7 @@ const categoryData = {
         rating: 4.9,
         featuredPolicy: "Elite Pet Shield",
         coverage: "All-Inclusive",
-        startingAt: "₹50/month",
+        startingAt: "$50/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -344,7 +329,7 @@ const categoryData = {
         rating: 4.8,
         featuredPolicy: "Complete Digital Protection",
         coverage: "Comprehensive",
-        startingAt: "₹100/month",
+        startingAt: "$100/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -353,7 +338,7 @@ const categoryData = {
         rating: 4.7,
         featuredPolicy: "Premium Cyber Coverage",
         coverage: "Full + Recovery",
-        startingAt: "₹150/month",
+        startingAt: "$150/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -362,7 +347,7 @@ const categoryData = {
         rating: 4.6,
         featuredPolicy: "Basic Cyber Insurance",
         coverage: "Standard",
-        startingAt: "₹75/month",
+        startingAt: "$75/month",
         image: "/placeholder.svg?height=80&width=80",
       },
       {
@@ -371,7 +356,7 @@ const categoryData = {
         rating: 4.9,
         featuredPolicy: "Elite Digital Shield",
         coverage: "All-Inclusive",
-        startingAt: "₹200/month",
+        startingAt: "$200/month",
         image: "/placeholder.svg?height=80&width=80",
       },
     ],
@@ -381,16 +366,6 @@ const categoryData = {
 export default function CategoryPage() {
   const params = useParams()
   const category = params?.category as string
-  const [policies, setPolicies] = useState<any[]>([])
-
-  useEffect(()=> {
-    const fetchData = async () => {
-      const response = await fetch(`http://localhost:4000/api/v1/users/policies/all-policies`)
-      const data = await response.json()
-      setPolicies(data.data)
-    }
-    fetchData()
-  } , [])
 
   // Get category data or default to health if not found
   const currentCategory = categoryData[category as keyof typeof categoryData] || categoryData.health
@@ -398,7 +373,7 @@ export default function CategoryPage() {
   return (
     <div className="container mx-auto py-12 px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className={`bg-gradient-to-r ₹{currentCategory.color} p-8 rounded-xl mb-10 text-white`}>
+        <div className={`bg-gradient-to-r ${currentCategory.color} p-8 rounded-xl mb-10 text-white`}>
           <div className="flex items-center gap-4 mb-4">
             <div className="text-4xl">{currentCategory.icon}</div>
             <h1 className="text-3xl md:text-4xl font-bold">{currentCategory.title}</h1>
@@ -409,9 +384,9 @@ export default function CategoryPage() {
         <div className="mb-10">
           <h2 className="text-2xl font-bold mb-6">Top Insurance Providers</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {policies.map((company) => (
+            {currentCategory.companies.map((company) => (
               <motion.div key={company.id} whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
-                <Link href={`/policy/${category}/${company._id}`}>
+                <Link href={`/policy/${category}/${company.id}`}>
                   <Card className="h-full overflow-hidden hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
@@ -509,3 +484,4 @@ export default function CategoryPage() {
     </div>
   )
 }
+

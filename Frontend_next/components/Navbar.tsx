@@ -76,21 +76,8 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Account</NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
-                    <li className="row-span-3">
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-primary/50 to-primary p-6 no-underline outline-none focus:shadow-md"
-                          href="/user-dashboard"
-                        >
-                          <User className="h-6 w-6 text-white" />
-                          <div className="mt-4 mb-2 text-lg font-medium text-white">User Dashboard</div>
-                          <p className="text-sm leading-tight text-white/90">
-                            Access your policies, claims, and documents
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
+                  <ul className="grid gap-3 p-4 md:w-[100px] lg:w-[200px] lg:grid-cols-1">
+                    
                     <li>
                       <Link href="/user-login" legacyBehavior passHref>
                         <NavigationMenuLink className={navigationMenuTriggerStyle()}>User Login</NavigationMenuLink>

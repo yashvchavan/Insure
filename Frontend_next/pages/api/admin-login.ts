@@ -45,13 +45,14 @@ export default async function handler(
       }
 
       // Respond with success (excluding the password)
-      const { password: _, _id, email:any, name } = admin;
-      const adminWithoutPassword = {
-        id: _id.toString(),
-        email,
-        name,
-      };
-      res.status(200).json({ message: 'Login successful', admin: adminWithoutPassword });
+      // const { password: _, _id, email:any, name } = admin;
+      // const adminWithoutPassword = {
+      //   id: _id.toString(),
+      //   email,
+      //   name,
+      // };
+      console.log('Admin login successful:', admin);
+      res.status(200).json({ message: 'Login successful', admin });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Internal server error' });

@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Award, CheckCircle, Clock, Star, Users, Phone, Mail, ArrowRight } from "lucide-react"
-import { useEffect } from "react"
 
 // Sample company data - in a real app, this would come from a database or API
 const companyData = {
@@ -28,9 +27,9 @@ const companyData = {
         id: "gold-health",
         name: "Gold Health Plan",
         description: "Comprehensive health coverage with low deductibles and extensive network access",
-        coverage: "₹1,000,000",
-        premium: "₹120/month",
-        deductible: "₹500",
+        coverage: "$1,000,000",
+        premium: "$120/month",
+        deductible: "$500",
         benefits: [
           "100% coverage for preventive care",
           "Low copays for doctor visits",
@@ -46,9 +45,9 @@ const companyData = {
         id: "silver-health",
         name: "Silver Health Plan",
         description: "Balanced coverage with moderate premiums and deductibles",
-        coverage: "₹750,000",
-        premium: "₹95/month",
-        deductible: "₹1,000",
+        coverage: "$750,000",
+        premium: "$95/month",
+        deductible: "$1,000",
         benefits: [
           "100% coverage for preventive care",
           "Moderate copays for doctor visits",
@@ -63,9 +62,9 @@ const companyData = {
         id: "bronze-health",
         name: "Bronze Health Plan",
         description: "Basic coverage with lower premiums and higher deductibles",
-        coverage: "₹500,000",
-        premium: "₹70/month",
-        deductible: "₹2,000",
+        coverage: "$500,000",
+        premium: "$70/month",
+        deductible: "$2,000",
         benefits: [
           "100% coverage for preventive care",
           "Higher copays for doctor visits",
@@ -118,8 +117,8 @@ const companyData = {
         name: "Comprehensive Auto Coverage",
         description: "Complete protection for your vehicle with extensive coverage options",
         coverage: "Full Coverage",
-        premium: "₹80/month",
-        deductible: "₹500",
+        premium: "$80/month",
+        deductible: "$500",
         benefits: [
           "Collision coverage",
           "Comprehensive coverage",
@@ -136,8 +135,8 @@ const companyData = {
         name: "Standard Auto Protection",
         description: "Balanced coverage with moderate premiums and deductibles",
         coverage: "Standard Coverage",
-        premium: "₹65/month",
-        deductible: "₹1,000",
+        premium: "$65/month",
+        deductible: "$1,000",
         benefits: [
           "Collision coverage",
           "Liability protection",
@@ -152,8 +151,8 @@ const companyData = {
         name: "Basic Auto Insurance",
         description: "Essential coverage to meet legal requirements with affordable premiums",
         coverage: "Basic Coverage",
-        premium: "₹45/month",
-        deductible: "₹1,500",
+        premium: "$45/month",
+        deductible: "$1,500",
         benefits: [
           "Liability protection",
           "Uninsured motorist coverage",
@@ -205,8 +204,8 @@ const companyData = {
         id: "term-life-premium",
         name: "Term Life Premium",
         description: "High-value term life insurance with flexible coverage periods",
-        coverage: "₹2,000,000",
-        premium: "₹150/month",
+        coverage: "$2,000,000",
+        premium: "$150/month",
         term: "10, 20, or 30 years",
         benefits: [
           "High coverage amount",
@@ -222,8 +221,8 @@ const companyData = {
         id: "whole-life",
         name: "Whole Life Coverage",
         description: "Permanent life insurance with cash value accumulation",
-        coverage: "₹1,000,000",
-        premium: "₹250/month",
+        coverage: "$1,000,000",
+        premium: "$250/month",
         term: "Lifetime",
         benefits: [
           "Lifetime coverage",
@@ -239,8 +238,8 @@ const companyData = {
         id: "universal-life",
         name: "Universal Life Plan",
         description: "Flexible permanent life insurance with adjustable premiums and benefits",
-        coverage: "₹1,500,000",
-        premium: "₹200/month",
+        coverage: "$1,500,000",
+        premium: "$200/month",
         term: "Lifetime",
         benefits: [
           "Lifetime coverage",
@@ -298,8 +297,8 @@ const defaultCompanyData = {
       name: "Standard Policy",
       description: "Comprehensive coverage for your needs",
       coverage: "Full Coverage",
-      premium: "₹100/month",
-      deductible: "₹500",
+      premium: "$100/month",
+      deductible: "$500",
       benefits: [
         "Comprehensive coverage",
         "24/7 customer support",
@@ -331,15 +330,12 @@ export default function CompanyPage() {
       company
         ?.toString()
         .split("-")
-        .map((word:any) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ") || "Insurance Provider",
   }
 
   const handleApplyNow = (policyId: string) => {
-    router.push(`/policy/₹{category}/₹{company}/apply?policy=₹{policyId}`)
-    policyId = Array.isArray(company) ? company.join("-") : company;
-    console.log("policy id",policyId);
-    router.push(`/policy/${category}/${policyId}/apply`)
+    router.push(`/policy/${category}/${company}/apply?policy=${policyId}`)
   }
 
   return (
@@ -360,7 +356,7 @@ export default function CompanyPage() {
             <div className="flex items-center mb-4">
               <div className="flex items-center text-amber-500 mr-2">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ₹{i < Math.floor(currentCompany.rating) ? "fill-current" : ""}`} />
+                  <Star key={i} className={`h-4 w-4 ${i < Math.floor(currentCompany.rating) ? "fill-current" : ""}`} />
                 ))}
                 <span className="ml-1 text-sm font-medium">{currentCompany.rating}</span>
               </div>
@@ -451,7 +447,7 @@ export default function CompanyPage() {
                         <span className="font-bold">{policy.premium}</span>
                       </div>
                       <div className="flex justify-between items-center pb-2 border-b">
-                        <span className="text-muted-foreground">{'deductible' in policy ? 'Deductible' : 'Term'}</span>
+                        <span className="text-muted-foreground">Deductible</span>
                         <span className="font-bold">{'deductible' in policy ? policy.deductible : policy.term}</span>
                       </div>
 
@@ -488,7 +484,7 @@ export default function CompanyPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center text-amber-500 mb-4">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-4 w-4 ₹{i < testimonial.rating ? "fill-current" : ""}`} />
+                        <Star key={i} className={`h-4 w-4 ${i < testimonial.rating ? "fill-current" : ""}`} />
                       ))}
                     </div>
                     <p className="italic mb-4">"{testimonial.comment}"</p>
@@ -585,3 +581,4 @@ function Globe(props: any) {
     </svg>
   )
 }
+

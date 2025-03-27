@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect } from "react";
+import { use, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useState } from "react";
 import { motion } from "framer-motion";
+
+import useAuth from "@/context/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,6 +27,7 @@ import { Search, Plus, Filter, Download, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation"
 
 const policyData = [
   { month: "Jan", newPolicies: 65, renewals: 40, cancellations: 12 },
@@ -46,8 +49,10 @@ const claimsData = [
 
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter()
+  const { email } = useAuth();
   const [policies, setPolicies] = useState<
-    { id: number; name: string; category: string; subscribers: number; revenue: string }[]
+    { _id: number; name: string; category: string; subcribers:number;revenue:number,}[]
   >([]);
   const [users, setUsers] = useState<
     { id: number; name: string; email: string; policies: number; joined: string }[]
@@ -58,45 +63,31 @@ export default function AdminDashboard() {
   const searchParams = useSearchParams();
   const successMessage = searchParams ? searchParams.get("success") : null;
 
-  // Display success message if present
+
   useEffect(() => {
-    if (successMessage) {
-      toast.success(successMessage);
+    if (email) {
+      fetchPolicies();
     }
-  }, [successMessage]);
+  }, [email]);
+
+  const fetchPolicies = async () => {
+    try {
+      console.log(email);
+      const response = await axios.get(`/api/display-admin-policy?email=${email}`);
+      setPolicies(response.data.admin || []);
+      
+      console.log("Policies:", response.data.admin);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching policies:", error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const responsePolicy = await axios.get(
-          "http://localhost:4000/api/v1/users/policies/admin-all-policies",
-          {
-            withCredentials: true, // ✅ Allows cookies to be sent with the request
-          }
-        );
-        console.log("Response in policies : ", responsePolicy);
-        setPolicies(responsePolicy.data.data);
-
-        const responseUser = await axios.get("http://localhost:4000/api/v1/users/purchase/all-user-admin", {
-          withCredentials: true,
-        });
-        console.log("user of admin :", responseUser.data.data);
-        setUsers(responseUser.data.data);
-        // Ensure backend response matches Policy[]
-      } catch (err: any) {
-        if (err.responsePolicy?.status === 401) {
-          await axios.get("http://localhost:4000/api/v1/admin/refresh-token", {
-            withCredentials: true,
-          });
-          window.location.reload(); // Retry after refreshing
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    console.log("Policies:", policies);
+  }, [policies]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -245,12 +236,13 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+
                     {policies.map((policy) => (
-                      <TableRow key={policy.id}>
-                        <TableCell>{policy.id}</TableCell>
+                      <TableRow key={policy._id}>
+                        <TableCell>{policy._id}</TableCell>
                         <TableCell>{policy.name}</TableCell>
                         <TableCell>{policy.category}</TableCell>
-                        <TableCell>{policy.subscribers}</TableCell>
+                        <TableCell>{policy.subcribers}</TableCell>
                         <TableCell>{policy.revenue}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">

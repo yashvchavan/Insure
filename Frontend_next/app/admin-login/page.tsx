@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -14,8 +14,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AdminLoginRequest } from '@/types/adminLogin';
 
+import useAuth from "@/context/store";
+
 
 export default function AdminLoginPage() {
+  const { useAuthlogin } = useAuth();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false); 
@@ -38,6 +41,9 @@ export default function AdminLoginPage() {
 
       // Show success message
       toast.success('Login successful! Redirecting...');
+      
+      //Storing in zustand
+      useAuthlogin(response.data.admin);
 
       // Redirect to the admin dashboard
       router.push('/admin-dashboard');

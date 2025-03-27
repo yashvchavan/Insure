@@ -14,11 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Plus, Minus, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import useAuth from "@/context/store";
+
 
 export default function AddPolicyPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const { email } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -34,6 +36,9 @@ export default function AddPolicyPage() {
     termsAndConditions: [""],
     isPopular: false,
     status: "active",
+    createdBy: email,
+    subcribers:0,
+    revenue:0,
     // minAge: "",
     // maxAge: "",
     // waitingPeriod: "",
@@ -97,33 +102,33 @@ export default function AddPolicyPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!validateForm()) {
-    return;
-  }
-  setIsSubmitting(true);
-
-  try {
-    const response = await axios.post('/api/create-policy', formData, {
-      withCredentials: true,
-    });
-
-    if (response.status === 201) {
-      // Redirect to admin-dashboard with a success message
-      router.push('/admin-dashboard?success=Policy+created+successfully');
-    } else {
-      throw new Error('Unexpected response from server');
+    if (!validateForm()) {
+      return;
     }
-  } catch (error) {
-    console.error('Error saving policy:', error);
-    setErrors({
-      submit: 'There was an error saving the policy. Please try again.',
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    setIsSubmitting(true);
+
+    try {
+      const response = await axios.post('/api/create-policy', formData, {
+        withCredentials: true,
+      });
+
+      if (response.status === 201) {
+        // Redirect to admin-dashboard with a success message
+        router.push('/admin-dashboard?success=Policy+created+successfully');
+      } else {
+        throw new Error('Unexpected response from server');
+      }
+    } catch (error) {
+      console.error('Error saving policy:', error);
+      setErrors({
+        submit: 'There was an error saving the policy. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="container mx-auto py-12 px-4">

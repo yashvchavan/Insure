@@ -17,8 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       termsAndConditions,
       isPopular,
       status,
+      createdBy,
+      subcribers,
+      revenue,
     } = req.body;
-
+    console.log('req.body:', req.body);
     // Validate input
     if (
       !name ||
@@ -32,7 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       !requiredDocuments ||
       !termsAndConditions ||
       typeof isPopular !== 'boolean' ||
-      !status
+      !status ||
+      !createdBy
     ) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -67,9 +71,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         termsAndConditions,
         isPopular,
         status,
+        createdBy,
+        subcribers,
+        revenue,
         createdAt: new Date(),
-      };
-
+      };  
+      console.log('New Policy:', newPolicy);
       // Insert the new policy into the database
       const result = await policiesCollection.insertOne(newPolicy);
       console.log('Policy inserted:', result.insertedId);
