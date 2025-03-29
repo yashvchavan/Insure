@@ -6,369 +6,85 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Star, Shield, Award, CheckCircle } from "lucide-react"
+import { useEffect, useState } from "react";
+import useAuth from "@/context/store"
+import axios from "axios"
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+// Add this helper function to ensure correct paths
+const getImagePath = (imageName?: string) => {
+  if (!imageName) return "/images/placeholder.png";
+  return imageName.startsWith('/') ? imageName : `/images/${imageName}`;
+};
 
-// Insurance category data
-const categoryData = {
-  health: {
-    title: "Health Insurance",
-    description: "Comprehensive coverage for medical expenses and healthcare needs",
-    icon: "🏥",
-    color: "from-red-500 to-pink-500",
-    companies: [
-      {
-        id: "acme-health",
-        name: "Acme Health Insurance",
-        rating: 4.8,
-        featuredPolicy: "Gold Health Plan",
-        coverage: "$1M",
-        startingAt: "$120/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "global-care",
-        name: "Global Care",
-        rating: 4.6,
-        featuredPolicy: "Family Health Shield",
-        coverage: "$750K",
-        startingAt: "$95/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "medisure",
-        name: "MediSure",
-        rating: 4.7,
-        featuredPolicy: "Premium Health Coverage",
-        coverage: "$1.2M",
-        startingAt: "$150/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "healthguard",
-        name: "HealthGuard",
-        rating: 4.5,
-        featuredPolicy: "Essential Health Plan",
-        coverage: "$500K",
-        startingAt: "$85/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  vehicle: {
-    title: "Vehicle Insurance",
-    description: "Protection for your car, bike, or commercial vehicles",
-    icon: "🚗",
-    color: "from-blue-500 to-cyan-500",
-    companies: [
-      {
-        id: "drive-safe",
-        name: "DriveSafe Insurance",
-        rating: 4.7,
-        featuredPolicy: "Comprehensive Auto Coverage",
-        coverage: "Full",
-        startingAt: "$80/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "auto-shield",
-        name: "AutoShield",
-        rating: 4.5,
-        featuredPolicy: "Premium Vehicle Protection",
-        coverage: "Full + Extras",
-        startingAt: "$95/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "road-secure",
-        name: "RoadSecure",
-        rating: 4.6,
-        featuredPolicy: "Basic Auto Insurance",
-        coverage: "Standard",
-        startingAt: "$65/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "vehicle-guard",
-        name: "VehicleGuard",
-        rating: 4.8,
-        featuredPolicy: "Elite Auto Protection",
-        coverage: "Premium",
-        startingAt: "$110/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  life: {
-    title: "Life Insurance",
-    description: "Financial security for your loved ones",
-    icon: "💖",
-    color: "from-purple-500 to-indigo-500",
-    companies: [
-      {
-        id: "life-secure",
-        name: "LifeSecure",
-        rating: 4.9,
-        featuredPolicy: "Term Life Premium",
-        coverage: "$2M",
-        startingAt: "$150/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "family-protect",
-        name: "FamilyProtect",
-        rating: 4.7,
-        featuredPolicy: "Whole Life Coverage",
-        coverage: "$1.5M",
-        startingAt: "$180/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "future-guard",
-        name: "FutureGuard",
-        rating: 4.6,
-        featuredPolicy: "Universal Life Plan",
-        coverage: "$1M",
-        startingAt: "$120/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "legacy-life",
-        name: "Legacy Life Insurance",
-        rating: 4.8,
-        featuredPolicy: "Premium Life Protection",
-        coverage: "$3M",
-        startingAt: "$200/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  home: {
-    title: "Home Insurance",
-    description: "Coverage for your home and belongings",
-    icon: "🏠",
-    color: "from-green-500 to-emerald-500",
-    companies: [
-      {
-        id: "home-shield",
-        name: "HomeShield",
-        rating: 4.7,
-        featuredPolicy: "Complete Home Protection",
-        coverage: "Full Replacement",
-        startingAt: "$90/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "property-guard",
-        name: "PropertyGuard",
-        rating: 4.6,
-        featuredPolicy: "Premium Property Coverage",
-        coverage: "Full + Contents",
-        startingAt: "$110/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "dwelling-secure",
-        name: "DwellingSecure",
-        rating: 4.8,
-        featuredPolicy: "Elite Home Insurance",
-        coverage: "Comprehensive",
-        startingAt: "$130/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "residence-protect",
-        name: "ResidenceProtect",
-        rating: 4.5,
-        featuredPolicy: "Basic Home Coverage",
-        coverage: "Standard",
-        startingAt: "$75/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  travel: {
-    title: "Travel Insurance",
-    description: "Protection during your trips and vacations",
-    icon: "✈️",
-    color: "from-yellow-500 to-amber-500",
-    companies: [
-      {
-        id: "travel-safe",
-        name: "TravelSafe",
-        rating: 4.6,
-        featuredPolicy: "Global Travel Protection",
-        coverage: "Comprehensive",
-        startingAt: "$25/trip",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "journey-guard",
-        name: "JourneyGuard",
-        rating: 4.7,
-        featuredPolicy: "Premium Travel Coverage",
-        coverage: "Premium",
-        startingAt: "$35/trip",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "voyage-secure",
-        name: "VoyageSecure",
-        rating: 4.5,
-        featuredPolicy: "Basic Travel Insurance",
-        coverage: "Standard",
-        startingAt: "$15/trip",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "trip-protect",
-        name: "TripProtect",
-        rating: 4.8,
-        featuredPolicy: "Elite Travel Shield",
-        coverage: "All-Inclusive",
-        startingAt: "$45/trip",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  business: {
-    title: "Business Insurance",
-    description: "Comprehensive coverage for your business",
-    icon: "🏢",
-    color: "from-orange-500 to-red-500",
-    companies: [
-      {
-        id: "business-shield",
-        name: "BusinessShield",
-        rating: 4.8,
-        featuredPolicy: "Complete Business Protection",
-        coverage: "Comprehensive",
-        startingAt: "$200/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "enterprise-guard",
-        name: "EnterpriseGuard",
-        rating: 4.7,
-        featuredPolicy: "Premium Business Coverage",
-        coverage: "Full + Liability",
-        startingAt: "$250/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "commerce-secure",
-        name: "CommerceSecure",
-        rating: 4.6,
-        featuredPolicy: "Standard Business Insurance",
-        coverage: "Basic",
-        startingAt: "$150/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "biz-protect",
-        name: "BizProtect",
-        rating: 4.9,
-        featuredPolicy: "Elite Business Shield",
-        coverage: "All-Inclusive",
-        startingAt: "$300/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  pet: {
-    title: "Pet Insurance",
-    description: "Healthcare coverage for your furry friends",
-    icon: "🐾",
-    color: "from-teal-500 to-green-500",
-    companies: [
-      {
-        id: "pet-care",
-        name: "PetCare Insurance",
-        rating: 4.7,
-        featuredPolicy: "Complete Pet Protection",
-        coverage: "Comprehensive",
-        startingAt: "$30/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "furry-shield",
-        name: "FurryShield",
-        rating: 4.8,
-        featuredPolicy: "Premium Pet Coverage",
-        coverage: "Full + Wellness",
-        startingAt: "$40/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "pet-health",
-        name: "PetHealth",
-        rating: 4.6,
-        featuredPolicy: "Basic Pet Insurance",
-        coverage: "Standard",
-        startingAt: "$20/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "animal-protect",
-        name: "AnimalProtect",
-        rating: 4.9,
-        featuredPolicy: "Elite Pet Shield",
-        coverage: "All-Inclusive",
-        startingAt: "$50/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
-  cyber: {
-    title: "Cyber Insurance",
-    description: "Protection against digital threats and data breaches",
-    icon: "🔒",
-    color: "from-violet-500 to-purple-500",
-    companies: [
-      {
-        id: "cyber-shield",
-        name: "CyberShield",
-        rating: 4.8,
-        featuredPolicy: "Complete Digital Protection",
-        coverage: "Comprehensive",
-        startingAt: "$100/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "data-guard",
-        name: "DataGuard",
-        rating: 4.7,
-        featuredPolicy: "Premium Cyber Coverage",
-        coverage: "Full + Recovery",
-        startingAt: "$150/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "digital-secure",
-        name: "DigitalSecure",
-        rating: 4.6,
-        featuredPolicy: "Basic Cyber Insurance",
-        coverage: "Standard",
-        startingAt: "$75/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-      {
-        id: "cyber-protect",
-        name: "CyberProtect",
-        rating: 4.9,
-        featuredPolicy: "Elite Digital Shield",
-        coverage: "All-Inclusive",
-        startingAt: "$200/month",
-        image: "/placeholder.svg?height=80&width=80",
-      },
-    ],
-  },
+// Update your category mapping
+const CATEGORY_IMAGES: Record<string, string> = {
+  health: getImagePath("health-insurance.png"),
+  home: getImagePath("home-insurance.png"),
+  travel: getImagePath("travel-insurance.png"),
+};
+// Type definitions
+interface Company {
+  id: string;
+  name: string;
+  rating: number;
+  featuredPolicy: string;
+  coverage: string;
+  startingAt: string;
+  image: string;
 }
 
-export default function CategoryPage() {
-  const params = useParams()
-  const category = params?.category as string
+interface CategoryData {
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  companies: Company[];
+}
 
-  // Get category data or default to health if not found
-  const currentCategory = categoryData[category as keyof typeof categoryData] || categoryData.health
+type PolicyData = Record<string, CategoryData>;
+
+export default function CategoryPage() {
+  const params = useParams();
+  const category = params?.category as string;
+  const [categoryData, setCategoryData] = useState<PolicyData>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/user-login");
+    } else {
+      fetchCategoryData();
+    }
+  }, [user]);
+
+  const fetchCategoryData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.get<PolicyData>('/api/get-all-policies');
+      setCategoryData(response.data || {});
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching policies:", err);
+      if (err instanceof Error) {
+        setError(err.message || "Failed to fetch category data");
+      } else {
+        setError("Failed to fetch category data");
+      }
+      setLoading(false);
+    }
+  };
+
+  const currentCategory = categoryData[category?.toLowerCase()] || categoryData.health;
+
+  if (loading) return <div className="flex justify-center items-center h-screen"><p>Loading...</p></div>;
+  if (error) return <div className="flex justify-center items-center h-screen"><p>Error: {error}</p></div>;
+  if (!currentCategory) return <div className="flex justify-center items-center h-screen"><p>No data available for this category</p></div>;
 
   return (
     <div className="container mx-auto py-12 px-4">
@@ -384,21 +100,24 @@ export default function CategoryPage() {
         <div className="mb-10">
           <h2 className="text-2xl font-bold mb-6">Top Insurance Providers</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentCategory.companies.map((company) => (
+            {currentCategory.companies?.map((company: Company) => (
               <motion.div key={company.id} whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
                 <Link href={`/policy/${category}/${company.id}`}>
                   <Card className="h-full overflow-hidden hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                          <img
-                            src={company.image || "/placeholder.svg"}
-                            alt={company.name}
-                            width={80}
-                            height={80}
-                            className="object-cover"
-                          />
-                        </div>
+                      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                        <Image
+                          src={getImagePath(company.image) || `/images/${currentCategory}-insurance.png`}
+                          alt={company.name}
+                          width={80}
+                          height={80}
+                          className="object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/images/placeholder.png";
+                          }}
+                        />
+                      </div>
                         <div>
                           <h3 className="text-xl font-bold">{company.name}</h3>
                           <div className="flex items-center text-amber-500">
@@ -484,4 +203,3 @@ export default function CategoryPage() {
     </div>
   )
 }
-

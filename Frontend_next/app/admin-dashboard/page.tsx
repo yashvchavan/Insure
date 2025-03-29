@@ -237,25 +237,25 @@ export default function AdminDashboard() {
                   </TableHeader>
                   <TableBody>
 
-                    {policies.map((policy) => (
-                      <TableRow key={policy._id}>
-                        <TableCell>{policy._id}</TableCell>
-                        <TableCell>{policy.name}</TableCell>
-                        <TableCell>{policy.category}</TableCell>
-                        <TableCell>{policy.subcribers}</TableCell>
-                        <TableCell>{policy.revenue}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              Edit
-                            </Button>
-                            <Button variant="destructive" size="sm">
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                      {policies.map((policy) => (
+                        <TableRow key={policy._id}>
+                          <TableCell>{policy._id}</TableCell>
+                          <TableCell>{policy.name}</TableCell>
+                          <TableCell>{policy.category}</TableCell>
+                          <TableCell>{policy.subcribers}</TableCell>
+                          <TableCell>{policy.revenue}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                              <Button variant="destructive" size="sm">
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>
