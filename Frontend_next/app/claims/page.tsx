@@ -2,7 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import useAuth from "@/context/store";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,7 +38,9 @@ export default function ClaimsPage() {
   const [claimDescription, setClaimDescription] = useState("")
   const [files, setFiles] = useState<File[]>([])
   const [submissionStatus, setSubmissionStatus] = useState<"idle" | "submitting" | "success">("idle")
-
+  const { user } = useAuth() as { user: { username: string } | null } || { user: null };
+  const router = useRouter();
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSubmissionStatus("submitting")
@@ -45,6 +49,17 @@ export default function ClaimsPage() {
     setTimeout(() => {
       setSubmissionStatus("success")
     }, 2000)
+  }
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/user-login");
+    }
+  }, [user, router]);
+
+  // If user is not logged in, don't render the dashboard
+  if (!user) {
+    return null; // or a loading spinner
   }
 
   return (

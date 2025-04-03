@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
+import useAuth from "@/context/store";
+import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ export default function VaultPage() {
   const [pinError, setPinError] = useState("");
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const { user } = useAuth() as { user: { username: string } | null } || { user: null };
+  const router = useRouter();
 
   const API_BASE_URL = "http://localhost:4000/api/v1/users/document";
 
@@ -125,6 +129,19 @@ export default function VaultPage() {
     setPin(["", "", "", ""]);
     setPinError("");
   };
+
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/user-login");
+    }
+  }, [user, router]);
+
+  // If user is not logged in, don't render the dashboard
+  if (!user) {
+    return null; // or a loading spinner
+  }
+
 
   return (
     <div className="container mx-auto py-8 px-4">
