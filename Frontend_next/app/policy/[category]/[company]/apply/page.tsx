@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +13,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FileUploader } from "@/components/FileUploader"
 import { CheckCircle, ChevronLeft, ChevronRight, FileText, Info } from "lucide-react"
+import { ApplicationData } from "@/types/application"
+
+
 
 export default function ApplyPage() {
   const params = useParams()
@@ -23,7 +24,7 @@ export default function ApplyPage() {
   const policyId = searchParams ? searchParams.get("policy") : null
 
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<ApplicationData>>({
     // Personal Information
     firstName: "",
     lastName: "",
@@ -50,19 +51,25 @@ export default function ApplyPage() {
     existingConditions: "",
     additionalNotes: "",
 
-    // Documents
-    identificationDocument: null as File | null,
-    proofOfIncome: null as File | null,
-    additionalDocuments: [] as File[],
-
     // Terms
     agreeToTerms: false,
     allowCommunication: false,
+    
+    // Link to the policy ID if provided in URL
+    policyId: policyId || undefined,
   })
 
+  // Store file objects separately because they need special handling
   const [files, setFiles] = useState<File[]>([])
+  const [idDocument, setIdDocument] = useState<File | null>(null)
+  const [incomeDocument, setIncomeDocument] = useState<File | null>(null)
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submissionData, setSubmissionData] = useState<{
+    applicationId: string;
+    submittedOn: string;
+  } | null>(null)
 
   const handleInputChange = (field: string, value: string | boolean | File | null | File[]) => {
     setFormData({
@@ -73,10 +80,6 @@ export default function ApplyPage() {
 
   const handleFileUpload = (newFiles: File[]) => {
     setFiles([...files, ...newFiles])
-    setFormData({
-      ...formData,
-      additionalDocuments: [...files, ...newFiles],
-    })
   }
 
   const handleNextStep = () => {
@@ -89,19 +92,107 @@ export default function ApplyPage() {
     window.scrollTo(0, 0)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  // Helper function to upload a file
+  const uploadFile = async (file: File): Promise<string | null> => {
+    if (!file) return null;
+    
+    const fileData = new FormData();
+    fileData.append('file', file);
+    
+    try {
+      const response = await fetch('/api/file-upload', {
+        method: 'POST',
+        body: fileData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.fileUrl;
+      } else {
+        throw new Error(result.message || 'File upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      console.log({
+        title: "Upload Error",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setIsSubmitted(true)
-    }, 2000)
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      // Upload files first
+      let uploadedFiles = [];
+      let idDocUrl = null;
+      let incomeDocUrl = null;
+      
+      if (idDocument) {
+        idDocUrl = await uploadFile(idDocument);
+      }
+      
+      if (incomeDocument) {
+        incomeDocUrl = await uploadFile(incomeDocument);
+      }
+      
+      // Upload additional files
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileUrl = await uploadFile(file);
+          if (fileUrl) {
+            uploadedFiles.push(fileUrl);
+          }
+        }
+      }
+      
+      // Prepare the final data with file URLs
+      const finalData = {
+        ...formData,
+        identificationDocument: idDocUrl,
+        proofOfIncome: incomeDocUrl,
+        additionalDocuments: uploadedFiles.length > 0 ? uploadedFiles : undefined,
+      };
+      
+      // Submit the application
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalData),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setSubmissionData({
+          applicationId: result.applicationId,
+          submittedOn: new Date(result.submittedOn).toLocaleDateString(),
+        });
+        setIsSubmitted(true);
+      } else {
+        throw new Error(result.message || 'Failed to submit application');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      console.log({
+        title: "Submission Error",
+        description: "Failed to submit your application. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleGoToConfirmation = () => {
-    router.push("/policy/confirmation")
+    router.push(`/policy/confirmation?applicationId=${submissionData?.applicationId}`)
   }
 
   return (
@@ -123,11 +214,11 @@ export default function ApplyPage() {
                   <h3 className="font-medium mb-2">Application Details</h3>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-muted-foreground">Application ID:</span>
-                    <span className="text-sm font-medium">APP-{Math.floor(Math.random() * 1000000)}</span>
+                    <span className="text-sm font-medium">{submissionData?.applicationId}</span>
                   </div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-muted-foreground">Submitted On:</span>
-                    <span className="text-sm font-medium">{new Date().toLocaleDateString()}</span>
+                    <span className="text-sm font-medium">{submissionData?.submittedOn}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Status:</span>
@@ -491,7 +582,7 @@ export default function ApplyPage() {
                             </p>
                           </div>
                           <FileUploader
-                            onFilesSelected={(files) => handleInputChange("identificationDocument", files[0])}
+                            onFilesSelected={(files) => setIdDocument(files[0])}
                             maxFiles={1}
                             acceptedFileTypes={[".pdf", ".jpg", ".jpeg", ".png"]}
                             maxFileSizeMB={5}
@@ -509,14 +600,14 @@ export default function ApplyPage() {
                             </p>
                           </div>
                           <FileUploader
-                            onFilesSelected={(files) => handleInputChange("proofOfIncome", files[0])}
+                            onFilesSelected={(files) => setIncomeDocument(files[0])}
                             maxFiles={1}
                             acceptedFileTypes={[".pdf", ".jpg", ".jpeg", ".png"]}
                             maxFileSizeMB={5}
                           />
                         </div>
                       </div>
-
+                      
                       <div className="space-y-2">
                         <Label>Additional Documents (Optional)</Label>
                         <div className="bg-muted/30 p-4 rounded-lg">
@@ -546,6 +637,17 @@ export default function ApplyPage() {
                                 <span className="text-xs text-muted-foreground ml-2">
                                   ({(file.size / 1024 / 1024).toFixed(2)} MB)
                                 </span>
+                                <button
+                                  type="button"
+                                  className="ml-auto text-red-500 hover:text-red-700"
+                                  onClick={() => {
+                                    const newFiles = [...files];
+                                    newFiles.splice(index, 1);
+                                    setFiles(newFiles);
+                                  }}
+                                >
+                                  Remove
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -556,7 +658,7 @@ export default function ApplyPage() {
                         <div className="flex items-start space-x-2">
                           <Checkbox
                             id="agreeToTerms"
-                            checked={formData.agreeToTerms}
+                            checked={formData.agreeToTerms as boolean}
                             onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked === true)}
                             required
                           />
@@ -584,7 +686,7 @@ export default function ApplyPage() {
                         <div className="flex items-start space-x-2">
                           <Checkbox
                             id="allowCommunication"
-                            checked={formData.allowCommunication}
+                            checked={formData.allowCommunication as boolean}
                             onCheckedChange={(checked) => handleInputChange("allowCommunication", checked === true)}
                           />
                           <div className="grid gap-1.5 leading-none">
@@ -630,4 +732,3 @@ export default function ApplyPage() {
     </div>
   )
 }
-
