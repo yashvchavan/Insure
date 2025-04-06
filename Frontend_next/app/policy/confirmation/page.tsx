@@ -1,40 +1,238 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Download, Home, Mail, Phone } from "lucide-react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+
+interface ApplicationData {
+  id: string
+  date: string
+  status: string
+  estimatedResponse: string
+  policyType: string
+  company: string
+  plan: string
+  coverage: string
+  premium: string
+  startDate: string
+  applicant: {
+    name: string
+    email: string
+    phone: string
+  }
+}
 
 export default function ConfirmationPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [applicationData, setApplicationData] = useState<ApplicationData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
 
-  // In a real app, this data would come from the server or be passed via state management
-  const applicationData = {
-    id: `APP-${Math.floor(Math.random() * 1000000)}`,
-    date: new Date().toLocaleDateString(),
-    status: "Under Review",
-    estimatedResponse: "3-5 business days",
-    policyType: "Health Insurance",
-    company: "Acme Health Insurance",
-    plan: "Gold Health Plan",
-    coverage: "$1,000,000",
-    premium: "$120/month",
-    startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 7 days from now
-    applicant: {
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "(555) 123-4567",
-    },
+  //multiple tab
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'lastApplicationId') {
+        // Update state if the ID changes in another tab
+        setApplicationId(e.newValue);
+      }
+    };
+  
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Get application ID safely
+  useEffect(() => {
+    // 1. First try URL parameter
+    const urlId = searchParams?.get('id') || null
+    if (urlId) {
+      setApplicationId(urlId)
+      return
+    }
+
+    // 2. Check storage only on client side
+    if (typeof window !== 'undefined') {
+      // Check session storage (if coming from form submission)
+      const sessionId = window.sessionStorage.getItem('lastApplicationId')
+      if (sessionId) {
+        setApplicationId(sessionId)
+        return
+      }
+
+      // 3. Check local storage as fallback
+      const localId = window.localStorage.getItem('lastApplicationId')
+      if (localId) {
+        setApplicationId(localId)
+        return
+      }
+    }
+
+    setError('No application ID found. Please return to the application form.')
+    setLoading(false)
+  }, [searchParams])
+
+  // Fetch application data
+  useEffect(() => {
+    if (!applicationId) return;
+  
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`/api/applications/${applicationId}`);
+        if (!response.ok) throw new Error('Failed to fetch');
+        
+        const data = await response.json();
+        console.log('Received data:', data); // Debug log
+  
+        setApplicationData({
+          id: data.applicationId,
+          date: new Date(data.createdAt).toLocaleDateString(),
+          status: data.status || "in process", // "submitted" -> "Submitted"
+          estimatedResponse: "3-5 business days", // This could come from your API if available
+          policyType: getPolicyType(data.policyId), // Map policyId to human-readable name
+          company: getInsuranceCompany(data.policyId), // Map policyId to company
+          plan: getPlanName(data.policyId), // Map policyId to plan name
+          coverage: data.coverageAmount ? `$${parseInt(data.coverageAmount).toLocaleString()}` : "Not specified",
+          premium: calculatePremium(data), // Custom function based on your business logic
+          startDate: data.startDate ? new Date(data.startDate).toLocaleDateString() : "Not specified",
+          applicant: {
+            name: `${data.firstName} ${data.lastName}`,
+            email: data.email,
+            phone: data.phone || "Not provided"
+          }
+        });
+      } catch (error) {
+        console.error('Fetch error:', error);
+        setError('Failed to load application details');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, [applicationId]);
+
+  // Add these utility functions to your component file
+const getPolicyType = (policyId: string) => {
+  const policyMap: Record<string, string> = {
+    'standard-policy': 'Standard Health Insurance',
+    'premium-policy': 'Premium Health Coverage',
+    // Add other policy IDs as needed
+  };
+  return policyMap[policyId] || "Health Insurance";
+};
+
+const getInsuranceCompany = (policyId: string) => {
+  const companyMap: Record<string, string> = {
+    'standard-policy': 'Acme Health Insurance',
+    'premium-policy': 'Gold Star Insurance',
+    // Add other policy IDs as needed
+  };
+  return companyMap[policyId] || "Insurance Provider";
+};
+
+const getPlanName = (policyId: string) => {
+  const planMap: Record<string, string> = {
+    'standard-policy': 'Basic Health Plan',
+    'premium-policy': 'Premium Care Plan',
+    // Add other policy IDs as needed
+  };
+  return planMap[policyId] || "Health Plan";
+};
+
+const calculatePremium = (data: any) => {
+  // Add your actual premium calculation logic here
+  // For now, we'll just return a placeholder
+  if (data.paymentFrequency === 'monthly') {
+    return "$120/month";
+  } else if (data.paymentFrequency === 'annual') {
+    return "$1,200/year";
   }
+  return "Contact for pricing";
+};
+
 
   const handleDownloadConfirmation = () => {
-    // In a real app, this would generate and download a PDF
-    alert("Downloading confirmation PDF...")
+    if (!applicationData) return
+    alert(`Downloading confirmation for application ${applicationData.id}...`)
+    // Actual implementation would generate a PDF
   }
 
+  if (loading) {
+    return (
+      <div className="container mx-auto py-12 px-4 text-center">
+        <p>Loading your application details...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-12 px-4 text-center">
+        <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+          <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mb-4 mx-auto">
+            <CheckCircle className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Application Not Found</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="flex flex-col space-y-3">
+            <Button asChild>
+              <Link href="/apply">Return to Application Form</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/">Go to Homepage</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!applicationData) {
+    return (
+      <div className="container mx-auto py-12 px-4 text-center">
+        <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-bold mb-4">No Application Data</h2>
+          <p className="text-muted-foreground mb-6">
+            We couldn't find your application details. Please contact support if you believe this is an error.
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Button asChild>
+              <Link href="/contact">Contact Support</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/">Go to Homepage</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // When retrieving the ID in your confirmation page:
+const getStoredApplicationId = () => {
+  if (typeof window === 'undefined') return null;
+  
+  // Clean up old entries (optional)
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const storedDate = localStorage.getItem('lastApplicationDate');
+  
+  if (storedDate && parseInt(storedDate) < oneWeekAgo) {
+    localStorage.removeItem('lastApplicationId');
+    localStorage.removeItem('lastApplicationDate');
+    return null;
+  }
+  
+  return localStorage.getItem('lastApplicationId');
+};
+
   const handleReturnHome = () => {
-    router.push("/")
+    router.push('/')  
   }
 
   return (
@@ -202,4 +400,3 @@ export default function ConfirmationPage() {
     </div>
   )
 }
-

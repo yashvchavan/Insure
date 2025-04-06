@@ -225,7 +225,12 @@ export default function ApplyPage() {
         submittedOn: new Date().toLocaleDateString()
       });
       setIsSubmitted(true);
-  
+      
+      storeApplicationId(result.applicationId);
+
+    // Redirect to confirmation
+      redirectToConfirmation(result.applicationId);
+
       console.log({
         title: 'Success!',
         description: 'Application submitted successfully',
@@ -246,6 +251,29 @@ export default function ApplyPage() {
     }
   };
   
+  const storeApplicationId = (id: string) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      // Store in sessionStorage (cleared when tab closes)
+      window.sessionStorage.setItem('lastApplicationId', id);
+      // Store in localStorage (persists between sessions)
+      window.localStorage.setItem('lastApplicationId', id);
+    } catch (error) {
+      console.error('Failed to store application ID:', error);
+      // Continue even if storage fails - we still have the ID in the URL
+    }
+  };
+  
+  // Separate redirection function
+  const redirectToConfirmation = (id: string) => {
+    // Using Next.js router for client-side navigation
+    router.push(`/policy/confirmation?id=${id}`);
+    
+    // Alternative if you need to force a full page load:
+    // window.location.href = `/policy/confirmation?id=${id}`;
+  };
+
   const handleGoToConfirmation = () => {
     if (!submissionData?.applicationId) {
       console.log({
