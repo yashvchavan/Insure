@@ -1,96 +1,66 @@
-// app/api/file-upload/route.ts
-import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { promises as fs } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { stat } from 'fs/promises';
+import formidable from 'formidable';
 
-// Configurable constants
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf'
-];
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-export async function POST(request: Request) {
+export const config = {
+  api: { bodyParser: false }
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-
-    // Validate file exists
-    if (!file) {
-      return NextResponse.json(
-        { success: false, message: 'No file received' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file type
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: `File type not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: `File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Read file buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Create unique filename
-    const originalFilename = file.name;
-    const fileExtension = originalFilename.split('.').pop();
-    const uniqueFilename = `${uuidv4()}.${fileExtension}`;
-
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    try {
-      await stat(uploadsDir);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
-        await mkdir(uploadsDir, { recursive: true });
-      } else {
-        throw err;
-      }
-    }
-
-    // Save file
-    const filePath = join(uploadsDir, uniqueFilename);
-    await writeFile(filePath, buffer);
-
-    // Return response
-    const fileUrl = `/uploads/${uniqueFilename}`;
-    
-    return NextResponse.json({ 
-      success: true, 
-      fileUrl,
-      originalFilename,
-      fileSize: file.size,
-      fileType: file.type,
-      message: 'File uploaded successfully'
+    const form = formidable({
+      maxFileSize: MAX_SIZE,
+      multiples: false,
+      keepExtensions: true
     });
 
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to upload file' },
-      { status: 500 }
-    );
+    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
+
+    const file = files.file;
+    if (!file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No file was uploaded' 
+      });
+    }
+
+    const uploadedFile = Array.isArray(file) ? file[0] : file;
+    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const newFilename = `${uuidv4()}.${uploadedFile.originalFilename?.split('.').pop() || ''}`;
+    const newPath = join(uploadDir, newFilename);
+
+    await fs.rename(uploadedFile.filepath, newPath);
+
+    return res.status(200).json({
+      success: true,
+      url: `/uploads/${newFilename}`,
+      originalName: uploadedFile.originalFilename,
+      size: uploadedFile.size,
+      type: uploadedFile.mimetype
+    });
+
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message.includes('maxFileSize') ? 
+        `File exceeds ${MAX_SIZE/1024/1024}MB limit` : 
+        'File upload failed'
+    });
   }
 }

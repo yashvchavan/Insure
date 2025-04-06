@@ -92,108 +92,172 @@ export default function ApplyPage() {
     window.scrollTo(0, 0)
   }
 
+  // Define maximum file size (e.g., 5MB)
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+  
   // Helper function to upload a file
-  const uploadFile = async (file: File): Promise<string | null> => {
-    if (!file) return null;
-    
-    const fileData = new FormData();
-    fileData.append('file', file);
-    
+
+  
+  
+  interface UploadResponse {
+    url?: string;
+    error?: string;
+    message?: string;
+  }
+  
+  interface ApplicationResponse {
+    success: boolean;
+    applicationId?: string;
+    submittedOn?: string;
+    message?: string;
+  }
+  
+  interface UploadResult {
+    success: boolean;
+    url?: string;
+    originalName?: string;
+    size?: number;
+    type?: string;
+    message?: string;
+  }
+  
+  const uploadFile = async (file: File): Promise<UploadResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+  
     try {
       const response = await fetch('/api/file-upload', {
         method: 'POST',
-        body: fileData,
+        body: formData,
       });
+  
+      const data = await response.json();
       
-      const result = await response.json();
-      
-      if (result.success) {
-        return result.fileUrl;
-      } else {
-        throw new Error(result.message || 'File upload failed');
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Upload failed');
       }
+  
+      return data;
+  
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Upload error:', error);
+      const message = error instanceof Error ? error.message : 'File upload failed';
       console.log({
-        title: "Upload Error",
-        description: "Failed to upload file. Please try again.",
-        variant: "destructive"
+        title: 'Upload Failed',
+        description: message,
+        variant: 'destructive'
       });
-      return null;
+      return { success: false, message };
     }
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+  
     try {
-      // Upload files first
-      let uploadedFiles = [];
-      let idDocUrl = null;
-      let incomeDocUrl = null;
-      
-      if (idDocument) {
-        idDocUrl = await uploadFile(idDocument);
+      // Validate required files exist
+      if (!idDocument || !incomeDocument) {
+        throw new Error('Please upload all required documents');
       }
-      
-      if (incomeDocument) {
-        incomeDocUrl = await uploadFile(incomeDocument);
+  
+      // Upload files in parallel
+      const [idResult, incomeResult, ...additionalResults] = await Promise.all([
+        uploadFile(idDocument),
+        uploadFile(incomeDocument),
+        ...files.map(file => uploadFile(file))
+      ]);
+  
+      // Verify required uploads succeeded
+      if (!idResult.success || !incomeResult.success) {
+        throw new Error(
+          [idResult.message, incomeResult.message]
+            .filter(Boolean)
+            .join(' ') || 'Document upload failed'
+        );
       }
-      
-      // Upload additional files
-      if (files.length > 0) {
-        for (const file of files) {
-          const fileUrl = await uploadFile(file);
-          if (fileUrl) {
-            uploadedFiles.push(fileUrl);
-          }
+  
+      // Prepare submission data with proper typing
+      const submission = {
+        ...formData,  // Your other form fields
+        documents: {
+          identification: {
+            url: idResult.url!,
+            name: idResult.originalName!,
+            size: idResult.size!,
+            type: idResult.type!
+          },
+          incomeProof: {
+            url: incomeResult.url!,
+            name: incomeResult.originalName!,
+            size: incomeResult.size!,
+            type: incomeResult.type!
+          },
+          ...(additionalResults.some(r => r.success) && {
+            additional: additionalResults
+              .filter(res => res.success)
+              .map(res => ({
+                url: res.url!,
+                name: res.originalName!,
+                size: res.size!,
+                type: res.type!
+              }))
+          })
         }
-      }
-      
-      // Prepare the final data with file URLs
-      const finalData = {
-        ...formData,
-        identificationDocument: idDocUrl,
-        proofOfIncome: incomeDocUrl,
-        additionalDocuments: uploadedFiles.length > 0 ? uploadedFiles : undefined,
       };
-      
-      // Submit the application
-      const response = await fetch('/api/applications', {
+  
+      // Submit application
+      const response = await fetch('/api/applications/route', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(finalData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submission),
       });
-      
+  
       const result = await response.json();
-      
-      if (response.ok) {
-        setSubmissionData({
-          applicationId: result.applicationId,
-          submittedOn: new Date(result.submittedOn).toLocaleDateString(),
-        });
-        setIsSubmitted(true);
-      } else {
-        throw new Error(result.message || 'Failed to submit application');
+  
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Application submission failed');
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
+  
+      // Handle success
+      setSubmissionData({
+        applicationId: result.applicationId,
+        submittedOn: new Date().toLocaleDateString()
+      });
+      setIsSubmitted(true);
+  
       console.log({
-        title: "Submission Error",
-        description: "Failed to submit your application. Please try again.",
-        variant: "destructive"
+        title: 'Success!',
+        description: 'Application submitted successfully',
+        variant: 'default'
+      });
+  
+    } catch (error) {
+      console.error('Submission error:', error);
+      console.log({
+        title: 'Submission Failed',
+        description: error instanceof Error ? 
+          error.message : 
+          'Please try again',
+        variant: 'destructive'
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   const handleGoToConfirmation = () => {
-    router.push(`/policy/confirmation?applicationId=${submissionData?.applicationId}`)
-  }
+    if (!submissionData?.applicationId) {
+      console.log({
+        title: "Error",
+        description: "No application ID found",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    router.push(`/policy/confirmation?applicationId=${submissionData.applicationId}`);
+  };
 
   return (
     <div className="container mx-auto py-12 px-4">

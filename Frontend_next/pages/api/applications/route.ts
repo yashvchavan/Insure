@@ -1,108 +1,80 @@
-// src/app/api/applications/route.ts
-import { NextResponse } from 'next/server';
-// src/lib/mongodb.ts
-import { MongoClient, Db } from 'mongodb';
-import { ApplicationData } from '@/types/application';
-// Replace with your MongoDB connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/InsureEase';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { MongoClient } from 'mongodb';
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'InsureEase';
 
-// MongoDB connection cache
-let cachedClient: MongoClient | null = null;
-let cachedDb: Db | null = null;
-export async function connectToDatabase() {
-    // Check if we have cached connection
-    if (cachedClient && cachedDb) {
-      return { client: cachedClient, db: cachedDb };
-    }
-  
-    // Create new MongoDB client
-    const client = await MongoClient.connect(MONGODB_URI);
-    const db = client.db(MONGODB_DB);
-  
-    // Cache the client and database connections
-    cachedClient = client;
-    cachedDb = db;
-  
-    return { client, db };
-  }
-
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    
-    // Validate the request body
-    if (!body.firstName || !body.lastName || !body.email) {
-      return NextResponse.json(
-        { message: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    const { db } = await connectToDatabase();
-
-    // Create application object with timestamps
-    const application: ApplicationData = {
-      ...body,
-      status: 'under_review',
-      applicationId: `APP-${Math.floor(Math.random() * 1000000)}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+interface ApplicationSubmission {
+  // Your form fields
+  firstName: string;
+  lastName: string;
+  email: string;
+  // ... other fields
+  documents: {
+    identification: {
+      url: string;
+      name: string;
+      size: number;
+      type: string;
     };
-
-    // Insert into MongoDB
-    const result = await db.collection('purchases').insertOne(application);
-
-    return NextResponse.json(
-      { 
-        success: true, 
-        message: 'Application submitted successfully',
-        applicationId: application.applicationId,
-        submittedOn: application.createdAt 
-      }, 
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Error submitting application:', error);
-    return NextResponse.json(
-      { message: 'Failed to submit application' },
-      { status: 500 }
-    );
-  }
+    incomeProof: {
+      url: string;
+      name: string;
+      size: number;
+      type: string;
+    };
+    additional?: Array<{
+      url: string;
+      name: string;
+      size: number;
+      type: string;
+    }>;
+  };
 }
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const applicationId = searchParams.get('applicationId');
-    const email = searchParams.get('email');
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
 
-    if (!applicationId && !email) {
-      return NextResponse.json(
-        { message: 'Missing search parameters' },
-        { status: 400 }
-      );
+  try {
+    const client = await MongoClient.connect(MONGODB_URI);
+    const db = client.db(MONGODB_DB);
+
+    const body: ApplicationSubmission = req.body;
+    
+    // Validate required documents
+    if (!body.documents?.identification?.url || !body.documents?.incomeProof?.url) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required document references'
+      });
     }
 
-    const { db } = await connectToDatabase();
-    
-    // Create query based on provided parameters
-    const query: any = {};
-    if (applicationId) query.applicationId = applicationId;
-    if (email) query.email = email;
+    const application = {
+      ...body,
+      status: 'submitted',
+      applicationId: `APP-${Date.now().toString(36).toUpperCase()}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
 
-    const applications = await db.collection('purchases')
-      .find(query)
-      .sort({ createdAt: -1 })
-      .toArray();
+    const result = await db.collection('applications').insertOne(application);
 
-    return NextResponse.json({ applications }, { status: 200 });
-  } catch (error) {
-    console.error('Error fetching applications:', error);
-    return NextResponse.json(
-      { message: 'Failed to fetch applications' },
-      { status: 500 }
-    );
+    return res.status(201).json({
+      success: true,
+      applicationId: application.applicationId,
+      submittedOn: application.createdAt.toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('Submission error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to submit application'
+    });
   }
 }
