@@ -335,7 +335,7 @@ export default function CompanyPage() {
   }
 
   const handleApplyNow = (policyId: string) => {
-    router.push(`/policy/${category}/${company}/apply?policy=${policyId}`)
+    router.push(`/policy/${category}/${company}/apply?policy=${currentCompany.name}`)
   }
 
   return (

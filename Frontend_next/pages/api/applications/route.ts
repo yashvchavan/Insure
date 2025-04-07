@@ -1,11 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
-
+const { ObjectId } = require('mongodb');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'InsureEase';
 
 interface ApplicationSubmission {
   // Your form fields
+  userId: string;
+  policyId: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -54,8 +56,17 @@ export default async function handler(
       });
     }
 
+    
+    const policy = await db.collection('policies').findOne({
+      _id: new ObjectId(body.policyId)  
+    });
+    const adminEmail = typeof policy?.createdBy === 'string' 
+    ? policy.createdBy 
+    : policy?.createdBy.email;
+
     const application = {
       ...body,
+      adminEmail,
       status: 'submitted',
       applicationId: `APP-${Date.now().toString(36).toUpperCase()}`,
       createdAt: new Date(),

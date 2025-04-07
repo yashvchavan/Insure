@@ -1,6 +1,7 @@
 // src/types/application.ts
 export interface ApplicationData {
     // Personal Information
+    userId: string;
     firstName: string;
     lastName: string;
     email: string;

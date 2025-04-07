@@ -90,7 +90,7 @@ export default function ConfirmationPage() {
         console.log('Received data:', data); // Debug log
   
         setApplicationData({
-          id: data.applicationId,
+          id: applicationId,
           date: new Date(data.createdAt).toLocaleDateString(),
           status: data.status || "in process", // "submitted" -> "Submitted"
           estimatedResponse: "3-5 business days", // This could come from your API if available

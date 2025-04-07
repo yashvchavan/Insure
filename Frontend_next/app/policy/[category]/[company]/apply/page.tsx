@@ -15,17 +15,21 @@ import { FileUploader } from "@/components/FileUploader"
 import { CheckCircle, ChevronLeft, ChevronRight, FileText, Info } from "lucide-react"
 import { ApplicationData } from "@/types/application"
 
+import useAuth from "@/context/store";
 
 
 export default function ApplyPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user } = useAuth() as { user: { id: string } | null } || { user: null };
   const policyId = searchParams ? searchParams.get("policy") : null
 
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<Partial<ApplicationData>>({
     // Personal Information
+    userId: user?.id || undefined,
+    policyId: policyId || undefined,
     firstName: "",
     lastName: "",
     email: "",
@@ -56,7 +60,7 @@ export default function ApplyPage() {
     allowCommunication: false,
     
     // Link to the policy ID if provided in URL
-    policyId: policyId || undefined,
+    
   })
 
   // Store file objects separately because they need special handling

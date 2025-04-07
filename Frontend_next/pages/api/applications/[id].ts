@@ -22,9 +22,9 @@ interface Application {
 interface Policy {
   policyId: string
   name: string
-  company: string
+  provider: string
   description?: string
-  basePremium?: number
+  premium?: number
   // Add other policy fields as needed
 }
 
@@ -75,9 +75,9 @@ export default async function handler(
       // Policy details (if found)
       ...(policyDetails && {
         policyName: policyDetails.name,
-        insuranceCompany: policyDetails.company,
+        insuranceCompany: policyDetails.provider,
         policyDescription: policyDetails.description,
-        basePremium: policyDetails.basePremium
+        basePremium: policyDetails.premium
       }),
       // Convert dates to ISO strings
       createdAt: application.createdAt.toISOString(),
