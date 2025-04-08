@@ -55,7 +55,7 @@ export default function AdminDashboard() {
     { _id: number; name: string; category: string; subcribers:number;revenue:number,}[]
   >([]);
   const [users, setUsers] = useState<
-    { id: number; name: string; email: string; policies: number; joined: string }[]
+    { applicationId: string; userId: string; policyId: string; startDate: number; email: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,8 +67,29 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (email) {
       fetchPolicies();
+      fetchUsers();
     }
   }, [email]);
+
+  const fetchUsers = async () => {
+    try{
+      console.log(email);
+      const response = await axios.get(`/api/display-application?email=${email}`);
+      setUsers(response.data.application || []);
+      
+      console.log("Application:", response.data.application);
+
+      setLoading(false);
+    }catch (error) {
+      console.error("Error fetching applications:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Application:", users);
+  }, [users]);
+
 
   const fetchPolicies = async () => {
     try {
@@ -387,29 +408,29 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Policies</TableHead>
-                      <TableHead>Joined</TableHead>
+                      <TableHead>Application ID</TableHead>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Policy ID</TableHead>
+                      <TableHead>Application Date</TableHead>
+                      <TableHead>User Email</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.name}</TableCell>
+                      <TableRow key={user.applicationId}>
+                        <TableCell>{user.applicationId}</TableCell>
+                        <TableCell>{user.userId}</TableCell>
+                        <TableCell>{user.policyId}</TableCell>
+                        <TableCell>{user.startDate}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.policies}</TableCell>
-                        <TableCell>{user.joined}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm">
-                              Edit
+                              View
                             </Button>
-                            <Button variant="destructive" size="sm">
-                              Delete
+                            <Button variant="default" size="sm">
+                              Approve
                             </Button>
                           </div>
                         </TableCell>
