@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useState } from "react";
 import { motion } from "framer-motion";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import useAuth from "@/context/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,47 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation"
 
+interface Application {
+  _id?: string;
+  userId: string;
+  policyId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  occupation: string;
+  employmentStatus: string;
+  annualIncome: string;
+  employerName?: string;
+  yearsEmployed?: string;
+  coverageAmount: string;
+  startDate: string;
+  paymentFrequency: string;
+  existingConditions: string;
+  additionalNotes?: string;
+  agreeToTerms: boolean;
+  allowCommunication: boolean;
+  documents?: {
+    [key: string]: {
+      url: string;
+      name: string;
+      size: number;
+      type: string;
+    };
+  };
+  adminEmail?: string;
+  status: string;
+  applicationId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const policyData = [
   { month: "Jan", newPolicies: 65, renewals: 40, cancellations: 12 },
   { month: "Feb", newPolicies: 59, renewals: 45, cancellations: 10 },
@@ -51,6 +92,8 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter()
   const { email } = useAuth();
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [policies, setPolicies] = useState<
     { _id: number; name: string; category: string; subcribers:number;revenue:number,}[]
   >([]);
@@ -62,7 +105,23 @@ export default function AdminDashboard() {
 
   const searchParams = useSearchParams();
   const successMessage = searchParams ? searchParams.get("success") : null;
+  
 
+
+  const handleViewClick = async (applicationId: string) => {
+    try {
+      const response = await fetch(`/api/view-application-detail?applicationId=${applicationId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch application details');
+      }
+      const { application } = await response.json();
+      setSelectedApplication(application);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching application details:', error);
+      toast.error('Failed to load application details');
+    }
+  };
 
   useEffect(() => {
     if (email) {
@@ -426,7 +485,11 @@ export default function AdminDashboard() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewClick(user.applicationId)}
+                            >
                               View
                             </Button>
                             <Button variant="default" size="sm">
@@ -443,6 +506,86 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </motion.div>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto text-gray-900 bg-white">
+          <DialogHeader>
+            <DialogTitle>Application Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedApplication && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="font-semibold mb-2">Personal Information</h3>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Application ID:</span> {selectedApplication.applicationId}</p>
+                  <p><span className="font-medium">Name:</span> {selectedApplication.firstName} {selectedApplication.lastName}</p>
+                  <p><span className="font-medium">Email:</span> {selectedApplication.email}</p>
+                  <p><span className="font-medium">Phone:</span> {selectedApplication.phone}</p>
+                  <p><span className="font-medium">Date of Birth:</span> {selectedApplication.dateOfBirth}</p>
+                  <p><span className="font-medium">Gender:</span> {selectedApplication.gender}</p>
+                </div>
+                
+                <h3 className="font-semibold mt-4 mb-2">Address</h3>
+                <div className="space-y-2">
+                  <p>{selectedApplication.address}</p>
+                  <p>{selectedApplication.city}, {selectedApplication.state} {selectedApplication.zipCode}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Employment Information</h3>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Occupation:</span> {selectedApplication.occupation}</p>
+                  <p><span className="font-medium">Employment Status:</span> {selectedApplication.employmentStatus}</p>
+                  <p><span className="font-medium">Annual Income:</span> ${selectedApplication.annualIncome}</p>
+                  <p><span className="font-medium">Employer:</span> {selectedApplication.employerName || 'N/A'}</p>
+                  <p><span className="font-medium">Years Employed:</span> {selectedApplication.yearsEmployed || 'N/A'}</p>
+                </div>
+                
+                <h3 className="font-semibold mt-4 mb-2">Policy Details</h3>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Policy ID:</span> {selectedApplication.policyId}</p>
+                  <p><span className="font-medium">Coverage Amount:</span> ${selectedApplication.coverageAmount}</p>
+                  <p><span className="font-medium">Start Date:</span> {selectedApplication.startDate}</p>
+                  <p><span className="font-medium">Payment Frequency:</span> {selectedApplication.paymentFrequency}</p>
+                </div>
+              </div>
+              
+              <div className="col-span-full">
+                <h3 className="font-semibold mb-2">Health Information</h3>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Existing Conditions:</span> {selectedApplication.existingConditions}</p>
+                  <p><span className="font-medium">Additional Notes:</span> {selectedApplication.additionalNotes}</p>
+                </div>
+              </div>
+              
+              {selectedApplication.documents && (
+                <div className="col-span-full">
+                  <h3 className="font-semibold mb-2">Documents</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(selectedApplication.documents).map(([docType, doc]) => (
+                      doc && doc.url && (
+                        <div key={docType} className="border rounded p-3">
+                          <h4 className="font-medium capitalize">{docType}</h4>
+                          <p className="text-sm text-gray-600 truncate">{doc.name}</p>
+                          <a 
+                            href={doc.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            View Document
+                          </a>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
