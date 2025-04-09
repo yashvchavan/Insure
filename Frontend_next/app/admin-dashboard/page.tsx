@@ -1,5 +1,5 @@
 "use client"
-
+import { X } from "lucide-react";
 import { use, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     { _id: number; name: string; category: string; subcribers:number;revenue:number,}[]
   >([]);
   const [users, setUsers] = useState<
-    { applicationId: string; userId: string; policyId: string; startDate: number; email: string }[]
+    { applicationId: string; userId: string; policyId: string; startDate: number; email: string ;status: string}[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -106,7 +106,72 @@ export default function AdminDashboard() {
   const searchParams = useSearchParams();
   const successMessage = searchParams ? searchParams.get("success") : null;
   
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
+  const handleApprove = async (applicationId: string) => {
+    try {
+      const response = await fetch('/api/approve-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ applicationId }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to approve application');
+      }
+  
+      // Update the local state to reflect the change
+      setUsers(users.map(user => 
+        user.applicationId === applicationId 
+          ? { ...user, status: 'approved' } 
+          : user
+      ));
+  
+      toast.success('Application approved successfully!');
+    } catch (error) {
+      console.error('Error approving application:', error);
+      toast.error('Failed to approve application');
+    }
+  };
+
+  const handleReject = async (applicationId: string) => {
+    setProcessingId(applicationId);
+    try {
+      const response = await fetch('/api/reject-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          applicationId,
+          rejectionReason 
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to reject application');
+      }
+  
+      setUsers(users.map(user => 
+        user.applicationId === applicationId 
+          ? { ...user, status: 'rejected' } 
+          : user
+      ));
+  
+      toast.success('Application rejected successfully!');
+      setShowRejectDialog(false);
+      setRejectionReason("");
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      toast.error('Failed to reject application');
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const handleViewClick = async (applicationId: string) => {
     try {
@@ -492,8 +557,25 @@ export default function AdminDashboard() {
                             >
                               View
                             </Button>
-                            <Button variant="default" size="sm">
-                              Approve
+                            <Button 
+                              variant={user.status === 'approved' ? 'secondary' : 'default'}
+                              size="sm"
+                              onClick={() => handleApprove(user.applicationId)}
+                              disabled={user.status === 'approved' || user.status === 'rejected'}
+                            >
+                              {user.status === 'approved' ? 'Approved' : 'Approve'}
+                            </Button>
+                            
+                            <Button 
+                              variant={user.status === 'rejected' ? 'destructive' : 'outline'}
+                              size="sm"
+                              onClick={() => {
+                                handleReject(user.applicationId);
+                                setShowRejectDialog(true);
+                              }}
+                              disabled={user.status === 'rejected' || user.status === 'approved'}
+                            >
+                              {user.status === 'rejected' ? 'Rejected' : 'Reject'}
                             </Button>
                           </div>
                         </TableCell>
@@ -509,7 +591,18 @@ export default function AdminDashboard() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto text-gray-900 bg-white">
           <DialogHeader>
-            <DialogTitle>Application Details</DialogTitle>
+            <DialogTitle>
+              <div className="flex justify-between items-center">
+                <span>Application Details</span>
+                <button 
+                  onClick={() => setIsDialogOpen(false)}
+                  className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+                >
+                  <X className="h-5 w-5" />
+                  <span className="sr-only">Close</span>
+                </button>
+              </div>
+            </DialogTitle>
           </DialogHeader>
           
           {selectedApplication && (

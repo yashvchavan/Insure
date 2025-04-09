@@ -36,7 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userId: 1,
         policyId: 1,
         startDate: 1,
-        email: 1
+        email: 1,
+        status:1,
       }).toArray();
 
       if (!application || application.length === 0) {
