@@ -52,7 +52,12 @@ export default async function handler(
       //   name,
       // };
       console.log('Admin login successful:', admin);
-      res.status(200).json({ message: 'Login successful', admin });
+      const adminWithoutPassword = {
+        id: admin._id.toString(),
+        email: admin.email,
+        name: admin.name,
+      };
+      res.status(200).json({ message: 'Login successful', admin: adminWithoutPassword });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Internal server error' });
