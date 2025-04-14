@@ -4,7 +4,7 @@ import { Types } from "mongoose";
 export type DocumentType = "image" | "pdf" | "document" | "other";
 
 export interface IDocument {
-  _id: Types.ObjectId;
+  id: Types.ObjectId;
   user: Types.ObjectId;
   name: string;
   url: string;

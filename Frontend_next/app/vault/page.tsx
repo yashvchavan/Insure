@@ -23,7 +23,12 @@ export default function VaultPage() {
   const { user } = useAuth() as { user: { username: string ,id:string} | null } || { user: null };
   const [userDocuments, setUserDocuments] = useState<IDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  
+  const [pinSetupComplete, setPinSetupComplete] = useState(false);
+  const [password, setPassword] = useState(""); // For password verification
+  const [isSettingPin, setIsSettingPin] = useState(false); // Controls PIN setup UI
+  const [newPin, setNewPin] = useState(["", "", "", ""]); // For new PIN entry
+  const [confirmPin, setConfirmPin] = useState(["", "", "", ""]); // For PIN confirmation
   useEffect(() => {
     if (pinVerified && user?.id) {
       const loadDocuments = async () => {
@@ -31,7 +36,7 @@ export default function VaultPage() {
         try {
           const docs = await fetchDocuments(user.id);
           setUserDocuments(docs);
-          console.log(docs); // Check what's actually being returned
+          console.log("Documents", docs); // Check what's actually being returned
         } catch (error) {
           console.error('Failed to load documents:', error);
         } finally {
@@ -42,7 +47,9 @@ export default function VaultPage() {
     }
   }, [pinVerified, user?.id]);
 
-
+  useEffect(() => {
+    console.log("Documents updated", userDocuments);
+  }, [userDocuments]); // This will log whenever userDocuments changes
 
   const handlePinChange = (index: number, value: string) => {
     if (value.length > 1) {
@@ -124,24 +131,7 @@ export default function VaultPage() {
     }
   }
 
-  const verifyPin = () => {
-    const enteredPin = pin.join("")
-
-    // For demo purposes, we'll use "1234" as the correct PIN
-    if (enteredPin === "1234") {
-      setPinVerified(true)
-      setPinError("")
-    } else {
-      setPinError("Incorrect PIN. Please try again.")
-      // Clear the PIN fields
-      setPin(["", "", "", ""])
-      // Focus the first PIN field
-      const firstInput = document.getElementById("pin-0")
-      if (firstInput) {
-        firstInput.focus()
-      }
-    }
-  }
+  
 
   const resetPin = () => {
     setPinVerified(false)
@@ -150,21 +140,155 @@ export default function VaultPage() {
     setShowForgotPin(false)
   }
 
-  const documents = [
-    { id: 1, name: "Health_Insurance_Policy.pdf", type: "pdf", size: "2.4 MB", category: "Health", date: "2023-05-15" },
-    {
-      id: 2,
-      name: "Vehicle_Insurance_Certificate.pdf",
-      type: "pdf",
-      size: "1.8 MB",
-      category: "Vehicle",
-      date: "2023-04-22",
-    },
-    { id: 3, name: "Life_Insurance_Terms.pdf", type: "pdf", size: "3.2 MB", category: "Life", date: "2023-03-10" },
-    { id: 4, name: "Home_Insurance_Policy.pdf", type: "pdf", size: "2.1 MB", category: "Home", date: "2023-02-18" },
-    { id: 5, name: "ID_Proof.jpg", type: "jpg", size: "1.2 MB", category: "Personal", date: "2023-01-05" },
-    { id: 6, name: "Address_Proof.jpg", type: "jpg", size: "0.9 MB", category: "Personal", date: "2023-01-05" },
-  ]
+  const fetchUserPin = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch(`/api/pin?userId=${user.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.pin) {
+        setPinSetupComplete(true);
+      }
+    } catch (error) {
+      console.error('Error fetching PIN:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchUserPin();
+  }, [user?.id]);
+  
+  const handleNewPinChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(0, 1);
+    if (value && !isNaN(Number(value))) {
+      const updatedPin = [...newPin];
+      updatedPin[index] = value;
+      setNewPin(updatedPin);
+      
+      if (value && index < 3) {
+        const nextInput = document.getElementById(`new-pin-${index + 1}`);
+        nextInput?.focus();
+      }
+    } else if (value === "") {
+      const updatedPin = [...newPin];
+      updatedPin[index] = "";
+      setNewPin(updatedPin);
+    }
+  };
+  
+  const handleConfirmPinChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(0, 1);
+    if (value && !isNaN(Number(value))) {
+      const updatedPin = [...confirmPin];
+      updatedPin[index] = value;
+      setConfirmPin(updatedPin);
+      
+      if (value && index < 3) {
+        const nextInput = document.getElementById(`confirm-pin-${index + 1}`);
+        nextInput?.focus();
+      }
+    } else if (value === "") {
+      const updatedPin = [...confirmPin];
+      updatedPin[index] = "";
+      setConfirmPin(updatedPin);
+    }
+  };
+  
+  const savePin = async () => {
+    const enteredPin = newPin.join("");
+    const enteredConfirmPin = confirmPin.join("");
+    
+    if (enteredPin.length !== 4 || enteredConfirmPin.length !== 4) {
+      setPinError("Please complete both PIN fields");
+      return;
+    }
+    
+    if (enteredPin !== enteredConfirmPin) {
+      setPinError("PINs don't match");
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          pin: enteredPin
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setPinSetupComplete(true);
+        setIsSettingPin(false);
+        setPinError("");
+      } else {
+        setPinError("Failed to save PIN. Please try again.");
+      }
+    } catch (error) {
+      console.error('Error saving PIN:', error);
+      setPinError("Failed to save PIN. Please try again.");
+    }
+  };
+  
+  // Update verifyPin to check against the stored PIN
+  const verifyPin = async () => {
+    const enteredPin = pin.join("");
+    
+    try {
+      const response = await fetch(`/api/pin?userId=${user?.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.pin === enteredPin) {
+        setPinVerified(true);
+        setPinError("");
+      } else {
+        setPinError("Incorrect PIN. Please try again.");
+        setPin(["", "", "", ""]);
+        document.getElementById("pin-0")?.focus();
+      }
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      setPinError("Failed to verify PIN. Please try again.");
+    }
+  };
+
+  const verifyPasswordForPinReset = async () => {
+    if (!user?.id || !password) return;
+  
+    try {
+      const response = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          password
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setShowForgotPin(false);
+        setIsSettingPin(true);
+        setPinSetupComplete(false);
+        setPassword("");
+      } else {
+        setPinError(data.error || "Incorrect password");
+        setPassword("");
+      }
+    } catch (error) {
+      setPinError("Failed to verify password. Please try again.");
+      console.error('Error verifying password:', error);
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -176,9 +300,13 @@ export default function VaultPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5" />
-                Secure Access
+                {pinSetupComplete ? "Enter Your PIN" : "Set Up Your Vault PIN"}
               </CardTitle>
-              <CardDescription>Enter your 4-digit PIN to access your document vault</CardDescription>
+              <CardDescription>
+                {pinSetupComplete 
+                  ? "Enter your 4-digit PIN to access your document vault"
+                  : "Create a secure 4-digit PIN to protect your documents"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {showForgotPin ? (
@@ -186,20 +314,92 @@ export default function VaultPage() {
                   <div className="p-4 rounded-lg bg-muted">
                     <h3 className="font-medium mb-2">Reset Your PIN</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      For security reasons, we'll send a PIN reset link to your registered email address.
+                      For security, please enter your account password to reset your vault PIN.
                     </p>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Input type="email" placeholder="Enter your email address" />
+                        <Input 
+                          type="password" 
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
                       </div>
                       <div className="flex gap-2">
-                        <Button className="w-full">Send Reset Link</Button>
-                        <Button variant="outline" onClick={() => setShowForgotPin(false)}>
+                        <Button 
+                          className="w-full"
+                          onClick={verifyPasswordForPinReset}
+                          disabled={!password}
+                        >
+                          Verify Password
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowForgotPin(false)}
+                        >
                           Cancel
                         </Button>
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : isSettingPin || !pinSetupComplete ? (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Create New PIN</label>
+                      <div className="flex justify-center gap-2">
+                        {[0, 1, 2, 3].map((index) => (
+                          <Input
+                            key={`new-${index}`}
+                            id={`new-pin-${index}`}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            className="w-12 h-12 text-center text-xl"
+                            value={newPin[index]}
+                            onChange={(e) => handleNewPinChange(index, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(index, e)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Confirm PIN</label>
+                      <div className="flex justify-center gap-2">
+                        {[0, 1, 2, 3].map((index) => (
+                          <Input
+                            key={`confirm-${index}`}
+                            id={`confirm-pin-${index}`}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            className="w-12 h-12 text-center text-xl"
+                            value={confirmPin[index]}
+                            onChange={(e) => handleConfirmPinChange(index, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(index, e)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {pinError && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-red-50 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      {pinError}
+                    </div>
+                  )}
+
+                  <Button 
+                    onClick={savePin}
+                    disabled={newPin.some(d => d === "") || confirmPin.some(d => d === "")}
+                  >
+                    Save PIN
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -247,6 +447,7 @@ export default function VaultPage() {
             </CardContent>
           </Card>
         ) : (
+
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Your Documents</h2>
@@ -280,7 +481,7 @@ export default function VaultPage() {
                     ) : (
                       <div className="space-y-4">
                         {userDocuments.map((doc) => (
-                          <div key={doc?._id?.toString()} className="flex items-center p-3 rounded-lg border">
+                          <div key={doc?.id?.toString()} className="flex items-center p-3 rounded-lg border">
                             <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center mr-3">
                               <FileText className="h-5 w-5 text-primary" />
                             </div>
@@ -315,6 +516,16 @@ export default function VaultPage() {
                                 }}
                               >
                                 Download
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                disabled={isUploading} 
+                                size="sm"
+                                onClick={() => handleDelete(doc?.id?.toString())}
+                                className="text-red-500 hover:bg-red-500 hover:text-white"  
+                                
+                              >
+                                Delete
                               </Button>
                             </div>
                           </div>
