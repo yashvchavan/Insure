@@ -1,8 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { promises as fs } from 'fs';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v2 as cloudinary } from 'cloudinary';
 import formidable from 'formidable';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -10,9 +16,49 @@ export const config = {
   api: { bodyParser: false }
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+interface UploadResponse {
+  success: boolean;
+  url?: string;
+  originalName?: string;
+  size?: number;
+  type?: string;
+  message?: string;
+}
+
+const uploadToCloudinary = (file: formidable.File, userId?: string): Promise<CloudinaryUploadResult> => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(
+      file.filepath,
+      {
+        resource_type: 'auto',
+        folder: 'InsureEase/documents',
+        public_id: `${userId || 'anonymous'}_${Date.now()}_${file.originalFilename?.replace(/\.[^/.]+$/, '')}`,
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error || new Error('Cloudinary upload failed'));
+        } else {
+          resolve(result as unknown as CloudinaryUploadResult);
+        }
+      }
+    );
+  });
+};
+
+interface CloudinaryUploadResult {
+  secure_url: string;
+  public_id: string;
+  format: string;
+  bytes: number;
+  original_filename?: string;
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse<UploadResponse>) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res.status(405).json({ 
+      success: false, 
+      message: 'Method not allowed' 
+    });
   }
 
   try {
@@ -38,20 +84,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const uploadedFile = Array.isArray(file) ? file[0] : file;
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(uploadDir, { recursive: true });
+    const userId = fields.userId?.[0] || 'anonymous';
 
-    const newFilename = `${uuidv4()}.${uploadedFile.originalFilename?.split('.').pop() || ''}`;
-    const newPath = join(uploadDir, newFilename);
-
-    await fs.rename(uploadedFile.filepath, newPath);
+    // Upload to Cloudinary instead of local directory
+    const cloudinaryResult = await uploadToCloudinary(uploadedFile, userId);
 
     return res.status(200).json({
       success: true,
-      url: `/uploads/${newFilename}`,
-      originalName: uploadedFile.originalFilename,
-      size: uploadedFile.size,
-      type: uploadedFile.mimetype
+      url: cloudinaryResult.secure_url,
+      originalName: uploadedFile.originalFilename || cloudinaryResult.original_filename,
+      size: cloudinaryResult.bytes,
+      type: cloudinaryResult.format
     });
 
   } catch (error: any) {
