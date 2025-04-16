@@ -23,6 +23,17 @@ const insuranceCompanies = [
   { id: "trust-shield", name: "TrustShield Insurance" },
 ]
 
+interface Policy {
+  _id: string;
+  policyId: string;
+  name: string;
+  type: string;
+  status: string;
+  coverageAmount: string;
+  startDate: string;
+  renewalDate: string;
+}
+
 export default function ClaimsPage() {
   const [activeTab, setActiveTab] = useState("new")
   const [selectedPolicy, setSelectedPolicy] = useState("")
@@ -31,7 +42,7 @@ export default function ClaimsPage() {
   const [claimDescription, setClaimDescription] = useState("")
   const [files, setFiles] = useState<File[]>([])
   const [submissionStatus, setSubmissionStatus] = useState<"idle" | "submitting" | "success">("idle")
-  const [userPolicies, setUserPolicies] = useState<{id: string, name: string}[]>([])
+  const [userPolicies, setUserPolicies] = useState<Policy[]>([])
   const [loadingPolicies, setLoadingPolicies] = useState(true)
   const { user } = useAuth() as { user: { id: string, username: string } | null } || { user: null }
   const router = useRouter()
@@ -44,7 +55,7 @@ export default function ClaimsPage() {
           const response = await fetch(`/api/user-policies?userId=${user?.id}`)
           if (response.ok) {
             const data = await response.json()
-            setUserPolicies(data)
+            setUserPolicies(data.policies || []) // Access the policies array from response
           } else {
             console.error("Failed to fetch user policies")
           }
@@ -134,7 +145,11 @@ export default function ClaimsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="policy">Select Policy</Label>
-                        <Select value={selectedPolicy} onValueChange={setSelectedPolicy} required>
+                        <Select 
+                          value={selectedPolicy} 
+                          onValueChange={setSelectedPolicy} 
+                          required
+                        >
                           <SelectTrigger id="policy">
                             <SelectValue placeholder={loadingPolicies ? "Loading policies..." : "Select a policy"} />
                           </SelectTrigger>
@@ -145,8 +160,16 @@ export default function ClaimsPage() {
                               </SelectItem>
                             ) : userPolicies.length > 0 ? (
                               userPolicies.map((policy) => (
-                                <SelectItem key={policy.id} value={policy.id}>
-                                  {policy.name}
+                                <SelectItem 
+                                  key={policy._id} 
+                                  value={policy.policyId}
+                                >
+                                  <div className="flex flex-col">
+                                    <span>{policy.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {policy.type} • Coverage: {policy.coverageAmount}
+                                    </span>
+                                  </div>
                                 </SelectItem>
                               ))
                             ) : (
