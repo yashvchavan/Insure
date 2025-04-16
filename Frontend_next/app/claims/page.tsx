@@ -16,13 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileUploader } from "@/components/FileUploader"
 import { CheckCircle, Clock, AlertCircle, FileText } from "lucide-react"
 
-const policies = [
-  { id: "health-gold", name: "Health Gold Plan" },
-  { id: "vehicle-comp", name: "Vehicle Comprehensive" },
-  { id: "life-term", name: "Term Life Insurance" },
-  { id: "home-plus", name: "Home Insurance Plus" },
-]
-
 const insuranceCompanies = [
   { id: "acme-ins", name: "Acme Insurance" },
   { id: "global-cover", name: "Global Coverage" },
@@ -38,9 +31,34 @@ export default function ClaimsPage() {
   const [claimDescription, setClaimDescription] = useState("")
   const [files, setFiles] = useState<File[]>([])
   const [submissionStatus, setSubmissionStatus] = useState<"idle" | "submitting" | "success">("idle")
-  const { user } = useAuth() as { user: { username: string } | null } || { user: null };
-  const router = useRouter();
+  const [userPolicies, setUserPolicies] = useState<{id: string, name: string}[]>([])
+  const [loadingPolicies, setLoadingPolicies] = useState(true)
+  const { user } = useAuth() as { user: { id: string, username: string } | null } || { user: null }
+  const router = useRouter()
   
+  useEffect(() => {
+    if (user?.id) {
+      const fetchUserPolicies = async () => {
+        try {
+          setLoadingPolicies(true)
+          const response = await fetch(`/api/user-policies?userId=${user?.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            setUserPolicies(data)
+          } else {
+            console.error("Failed to fetch user policies")
+          }
+        } catch (error) {
+          console.error("Error fetching user policies:", error)
+        } finally {
+          setLoadingPolicies(false)
+        }
+      }
+
+      fetchUserPolicies()
+    }
+  }, [user?.id])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSubmissionStatus("submitting")
@@ -53,13 +71,12 @@ export default function ClaimsPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/user-login");
+      router.push("/user-login")
     }
-  }, [user, router]);
+  }, [user, router])
 
-  // If user is not logged in, don't render the dashboard
   if (!user) {
-    return null; // or a loading spinner
+    return null
   }
 
   return (
@@ -119,14 +136,24 @@ export default function ClaimsPage() {
                         <Label htmlFor="policy">Select Policy</Label>
                         <Select value={selectedPolicy} onValueChange={setSelectedPolicy} required>
                           <SelectTrigger id="policy">
-                            <SelectValue placeholder="Select a policy" />
+                            <SelectValue placeholder={loadingPolicies ? "Loading policies..." : "Select a policy"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {policies.map((policy) => (
-                              <SelectItem key={policy.id} value={policy.id}>
-                                {policy.name}
+                            {loadingPolicies ? (
+                              <SelectItem value="loading" disabled>
+                                Loading policies...
                               </SelectItem>
-                            ))}
+                            ) : userPolicies.length > 0 ? (
+                              userPolicies.map((policy) => (
+                                <SelectItem key={policy.id} value={policy.id}>
+                                  {policy.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-policies" disabled>
+                                No policies found
+                              </SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -361,4 +388,3 @@ export default function ClaimsPage() {
     </div>
   )
 }
-
