@@ -118,7 +118,7 @@ export default function UserDashboard() {
     <div className="container mx-auto py-8 px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">{user?.username || "User Dashboard"}</h1>
+          <h1 className="text-4xl font-bold text-primary">{"Welcome " + user?.username || "User Dashboard"}</h1>
           <Link href="/user-dashboard">
             <div className="flex items-center gap-2 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               <User className="h-6 w-6" />

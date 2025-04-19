@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # Broader CORS configuration
+CORS(app)
 
 class FAQChatBot:
     """FAQ Chatbot using TF-IDF and cosine similarity"""
@@ -38,6 +38,16 @@ class FAQChatBot:
         except Exception as e:
             logger.error(f"Error loading data: {str(e)}")
             raise
+
+    @app.route("/api/chat", methods=["POST", "OPTIONS"])
+    def handle_chat():
+        if request.method == "OPTIONS":
+            response = jsonify({"status": "preflight"})
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            response.headers.add("Access-Control-Allow-Headers", "*")
+            response.headers.add("Access-Control-Allow-Methods", "*")
+            return response
+        # Rest of your existing code...
 
     def _train_model(self):
         """Train the TF-IDF model"""
