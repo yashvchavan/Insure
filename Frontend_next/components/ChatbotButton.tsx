@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 
 export default function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
+  const [messages, setMessages] = useState<{ text: string; isUser: boolean; action?: string; url?: string }[]>([
     { text: "Hello! I'm your AI assistant. How can I help you with insurance today?", isUser: false },
   ])
   const [inputValue, setInputValue] = useState("")
@@ -76,11 +76,11 @@ export default function ChatbotButton() {
   }
 
   const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return
-
-    const userMessage = { text: text, isUser: true }
-    setMessages((prev) => [...prev, userMessage])
-
+    if (!text.trim()) return;
+  
+    const userMessage = { text: text, isUser: true };
+    setMessages((prev) => [...prev, userMessage]);
+  
     try {
       const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
@@ -88,20 +88,45 @@ export default function ChatbotButton() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ query: text }),
-      })
+      });
       
-      const data = await response.json()
+      const data = await response.json();
       
-      const botMessage = { text: data.response, isUser: false }
-      setMessages((prev) => [...prev, botMessage])
+      // Check if response contains navigation action
+      if (data.action === 'navigate') {
+        const botMessage = { 
+          text: data.response, 
+          isUser: false,
+          action: 'navigate',
+          url: data.url
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        
+        // Add slight delay for better UX
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 1500);
+      } else {
+        // Regular response handling
+        const botMessage = { 
+          text: data.response, 
+          isUser: false 
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        
+        // Speak the response if TTS is enabled
+        if (speechSupported.synthesis) {
+          speak(data.response);
+        }
+      }
     } catch (error) {
-      console.error("Error communicating with chatbot API:", error)
+      console.error("Error communicating with chatbot API:", error);
       setMessages((prev) => [...prev, { 
         text: "Sorry, I'm having trouble connecting. Please try again.", 
         isUser: false 
-      }])
+      }]);
     }
-  }
+  };
 
   const toggleListening = () => {
     if (!speechSupported.recognition) {
@@ -202,6 +227,7 @@ export default function ChatbotButton() {
 
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            // In your messages map function
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
                   <div
@@ -209,7 +235,14 @@ export default function ChatbotButton() {
                       message.isUser 
                         ? "bg-primary text-primary-foreground rounded-tr-none" 
                         : "bg-muted rounded-tl-none"
-                    }`}
+                    } ${message.action === 'navigate' ? 'cursor-pointer hover:bg-blue-100' : ''}`}
+                    onClick={() => {
+                      if (message.action === 'navigate') {
+                        if (message.url) {
+                          window.location.href = message.url;
+                        }
+                      }
+                    }}
                   >
                     {!message.isUser && (
                       <div className="flex items-center mb-1">
@@ -220,6 +253,9 @@ export default function ChatbotButton() {
                       </div>
                     )}
                     <p className="text-sm">{message.text}</p>
+                    {message.action === 'navigate' && (
+                      <p className="text-xs mt-1 text-blue-600">Click here to navigate</p>
+                    )}
                   </div>
                 </div>
               ))}

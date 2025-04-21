@@ -93,3 +93,12 @@ body {
 }
 
 
+/* Add to your global CSS */
+.chat-navigation-message {
+  transition: all 0.2s ease;
+}
+
+.chat-navigation-message:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
