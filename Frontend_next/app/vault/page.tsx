@@ -13,6 +13,9 @@ import { FileText, FolderOpen, Lock, Shield, AlertCircle, X, Loader2 } from "luc
 import useAuth from "@/context/store"
 import { uploadDocuments, fetchDocuments, deleteDocument } from "@/services/documentService"
 import { UploadDocumentResponse, IDocument } from '@/types/document';
+import router from "next/router"
+import { useRouter } from "next/navigation"
+
 export default function VaultPage() {
   const [pinVerified, setPinVerified] = useState(false)
   const [pin, setPin] = useState(["", "", "", ""])
@@ -24,11 +27,20 @@ export default function VaultPage() {
   const [userDocuments, setUserDocuments] = useState<IDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  const router = useRouter();
   const [pinSetupComplete, setPinSetupComplete] = useState(false);
   const [password, setPassword] = useState(""); // For password verification
   const [isSettingPin, setIsSettingPin] = useState(false); // Controls PIN setup UI
   const [newPin, setNewPin] = useState(["", "", "", ""]); // For new PIN entry
   const [confirmPin, setConfirmPin] = useState(["", "", "", ""]); // For PIN confirmation
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/user-login");
+    }
+  }, [user]);
+
+
   useEffect(() => {
     if (pinVerified && user?.id) {
       const loadDocuments = async () => {
