@@ -26,29 +26,28 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     const payload: AdminLoginRequest = {
       email,
       password,
     };
-
+  
     try {
       setLoading(true);
       const response = await axios.post('/api/admin-login', payload, {
-        withCredentials: true, // Ensure cookies are sent with the request
+        withCredentials: true,
       });
-      console.log('Login Response:', response.data);
-
-      // Show success message
+  
+      // Store admin info in Zustand
+      useAuth.getState().useAuthlogin({
+        ...response.data.admin,
+        role: 'admin' // Ensure role is set
+      });
+      useAuth.getState().setAdminEmail(email); // Explicitly set admin email
+  
       toast.success('Login successful! Redirecting...');
-      
-      //Storing in zustand
-      useAuthlogin(response.data.admin);
-
-      // Redirect to the admin dashboard
       router.push('/admin-dashboard');
     } catch (error: any) {
-      console.error('Login Failed:', error);
       toast.error(error.response?.data?.message || 'Login failed.');
     } finally {
       setLoading(false);

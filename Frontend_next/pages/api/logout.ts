@@ -1,30 +1,47 @@
 // pages/api/logout.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import cookie from 'cookie';
+import { serialize } from 'cookie';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    try {
-      // Clear the session cookie
-      res.setHeader(
-        'Set-Cookie',
-        cookie.serialize('session', '', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-          expires: new Date(0), // Expire the cookie immediately
-          sameSite: 'strict',
-          path: '/',
-        })
-      );
-
-      // Respond with success and redirect URL
-      res.status(200).json({ message: 'Logged out successfully', redirectTo: '/user-login' });
-    } catch (error) {
-      console.error('Logout error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  } else {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+  }
+
+  try {
+    // Clear all auth cookies
+    const cookies = [
+      serialize('access_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0),
+        path: '/',
+        sameSite: 'strict',
+      }),
+      serialize('refresh_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0),
+        path: '/',
+        sameSite: 'strict',
+      }),
+      serialize('auth_state', '', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0),
+        path: '/',
+        sameSite: 'strict',
+      })
+    ];
+
+    res.setHeader('Set-Cookie', cookies);
+    return res.status(200).json({ message: 'Logout successful' });
+    
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }

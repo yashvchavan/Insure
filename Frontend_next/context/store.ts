@@ -1,40 +1,48 @@
+// context/store.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useEffect } from "react";
+import { UserSession } from "@/types/auth";
 
-// Zustand Store
+interface AuthState {
+  user: UserSession | null;
+  isAuthenticated: boolean;
+  adminEmail: string | null;
+  useAuthlogin: (newUser: UserSession) => void;
+  useAuthlogout: () => void;
+  setAdminEmail: (email: string) => void;
+  login: (userData: any) => void;
+  logout: () => void;
+}
+
 const useAuth = create(
-  persist(
-    (set: any) => ({
+  persist<AuthState>(
+    (set) => ({
       user: null,
-      email:null,
       isAuthenticated: false,
-      useAuthlogin: (newUser: any) => {
-        set({ user: newUser,email:newUser.email, isAuthenticated: true });
-      },
-      adminEmail:(Email: any)=>{
-        set({email:Email});   
+      adminEmail: null,
+      useAuthlogin: (newUser) => {
+        set({ 
+          user: newUser,
+          isAuthenticated: true,
+          adminEmail: newUser.role === 'admin' ? newUser.email : null
+        });
       },
       useAuthlogout: () => {
-        // sessionStorage.removeItem("auth-storage");
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, adminEmail: null });
       },
+      setAdminEmail: (email) => set({ adminEmail: email }),
+      login: (userData) => set({ user: userData, isAuthenticated: true }),
+      logout: () => set({ user: null, isAuthenticated: false, adminEmail: null }),
     }),
     {
       name: "auth-storage",
       storage: {
-        getItem: (name) => {
-          const value = sessionStorage.getItem(name);
-          return value ? JSON.parse(value) : null;
-        },
-        setItem: (name, value) => {
-          sessionStorage.setItem(name, JSON.stringify(value));
-        },
-        removeItem: (name) => {
-          sessionStorage.removeItem(name);
-        },
+        getItem: (name) => JSON.parse(sessionStorage.getItem(name) || "null"),
+        setItem: (name, value) => sessionStorage.setItem(name, JSON.stringify(value)),
+        removeItem: (name) => sessionStorage.removeItem(name),
       },
     }
   )
 );
+
 export default useAuth;

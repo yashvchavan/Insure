@@ -91,7 +91,7 @@ const claimsData = [
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter()
-  const { email } = useAuth();
+  const { adminEmail, isAuthenticated } = useAuth();
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [policies, setPolicies] = useState<
@@ -109,6 +109,12 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || !adminEmail) {
+      router.push('/admin-login');
+    }
+  }, [isAuthenticated, adminEmail, router]);
 
   const handleApprove = async (applicationId: string) => {
     try {
@@ -189,16 +195,16 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (email) {
+    if (adminEmail) {
       fetchPolicies();
       fetchUsers();
     }
-  }, [email]);
+  }, [adminEmail]);
 
   const fetchUsers = async () => {
     try{
-      console.log(email);
-      const response = await axios.get(`/api/display-application?email=${email}`);
+      console.log(adminEmail);
+      const response = await axios.get(`/api/display-application?email=${adminEmail}`);
       setUsers(response.data.application || []);
       
       console.log("Application:", response.data.application);
@@ -217,8 +223,8 @@ export default function AdminDashboard() {
 
   const fetchPolicies = async () => {
     try {
-      console.log(email);
-      const response = await axios.get(`/api/display-admin-policy?email=${email}`);
+      console.log(adminEmail);
+      const response = await axios.get(`/api/display-admin-policy?email=${adminEmail}`);
       setPolicies(response.data.admin || []);
       
       console.log("Policies:", response.data.admin);

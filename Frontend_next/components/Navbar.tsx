@@ -32,23 +32,25 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      // Call the logout API
-      const response = await axios.post("/api/logout");
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
   
-      // Clear the authentication state using Zustand
-      const { useAuthlogout } = useAuth.getState();
-      useAuthlogout();
+      const data = await response.json();
   
-      console.log("User logged out successfully");
-  
-      // Redirect to the login page or home page
-      if (response.data.redirectTo) {
-        window.location.href = response.data.redirectTo; // Redirect to the specified URL
+      if (data.success) {
+        // Clear Zustand store
+        const { useAuthlogout } = useAuth.getState();
+        useAuthlogout();
+        
+        // Redirect
+        window.location.href = data.redirectTo;
       } else {
-        window.location.href = "/"; // Fallback to home page
+        console.error('Logout failed:', data.message);
       }
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error('Logout error:', error);
     }
   };
 

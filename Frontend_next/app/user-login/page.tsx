@@ -12,41 +12,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { log } from "console"
 import axios from "axios"
 import useAuth from "@/context/store"
-
+import apiClient from '@/services/apiClient';
 import { LoginRequest, LoginResponse } from '@/types/login';
 
+import { generateTokens, setAuthCookies } from '@/services/authService';
 export default function UserLoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  
+  const [error, setError] = useState('')
   const router = useRouter()
   const { useAuthlogin } = useAuth()
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const payload: LoginRequest = {
-      username,
-      password,
-    };
-
+    
     try {
-      const response = await axios.post<LoginResponse>('/api/login', payload, {
-        withCredentials: true,
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include' // Essential for cookies
       });
-      console.log('Login Response:', response.data);
-
-      // Update the auth context with the logged-in user
-      if (response.data.user) {
-        useAuthlogin(response.data.user);
-      }
-
-      // Redirect to the home page after successful login
-      router.push('/');
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Login Failed:', error.response?.data?.message || error.message);
+  
+      const data = await response.json();
+      
+      if (response.ok) {
+        // 1. Update Zustand store
+        useAuthlogin(data.user);
+        
+        // 2. Store token in localStorage/sessionStorage if needed
+        if (data.token) {
+          sessionStorage.setItem('auth_token', data.token);
+        }
+        
+        // 3. Force full page reload to ensure all auth state is initialized
+        window.location.href = '/';
       } else {
-        console.error('Login Failed:', error);
+        setError(data.message || 'Login failed');
       }
+    } catch (err) {
+      setError('Network error - please try again');
+      console.error('Login error:', err);
     }
   };
   return (
@@ -94,5 +100,9 @@ export default function UserLoginPage() {
       </motion.div>
     </div>
   )
+}
+
+function setError(arg0: any) {
+  throw new Error("Function not implemented.")
 }
 

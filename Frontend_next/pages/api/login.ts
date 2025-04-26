@@ -2,67 +2,107 @@
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { serialize } from 'cookie';
+import jwt from 'jsonwebtoken';
 import { LoginRequest, LoginResponse } from '@/types/login';
 
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes
+const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
+// Add at the start of your handler function
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<LoginResponse>
 ) {
-  if (req.method === 'POST') {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+  }
+
+  try {
     const { username, password } = req.body as LoginRequest;
 
-    // Validate input
     if (!username || !password) {
       return res.status(400).json({ message: 'Username and password are required' });
     }
-
-    // Log the MongoDB URI for debugging
-    console.log('MongoDB URI:', process.env.MONGODB_URI);
 
     if (!process.env.MONGODB_URI) {
       return res.status(500).json({ message: 'MongoDB connection string is missing' });
     }
 
     const client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
 
     try {
-      await client.connect();
-      console.log('Connected to MongoDB');
+      const db = client.db('InsureEase');
+      const usersCollection = db.collection('users');
 
-      const db = client.db('InsureEase'); // Use the `insureease` database
-      const usersCollection = db.collection('users'); // Use the `users` collection
-
-      // Find the user by username
+      // Find user by username
       const user = await usersCollection.findOne({ username });
       if (!user) {
-        return res.status(400).json({ message: 'Invalid username or password' });
+        return res.status(401).json({ message: 'Invalid username or password' });
       }
 
-      // Compare the provided password with the hashed password in the database
+      // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(400).json({ message: 'Invalid username or password' });
+        return res.status(401).json({ message: 'Invalid username or password' });
       }
 
-      // Respond with success (excluding the password)
-      const { password: _, _id, username:any, name, email, phone } = user;
-      const userWithoutPassword = {
-        id: _id.toString(),
-        username,
-        name,
-        email,
-        phone,
+      // Create user session without password
+      const userSession = {
+        id: user._id.toString(),
+        username: user.username,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: 'user' as const,
       };
-      res.status(200).json({ message: 'Login successful', user: userWithoutPassword });
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        path: '/',
+        sameSite: 'strict' as const,
+        domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
+      };
+      // Generate JWT tokens
+      const accessToken = jwt.sign(
+        { userId: userSession.id, role: userSession.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: userSession.id, role: userSession.role },
+        JWT_SECRET,
+        { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+      );
+
+      // Set HTTP-only cookies
+      res.setHeader('Set-Cookie', [
+        serialize('access_token', accessToken, cookieOptions),
+        serialize('refresh_token', refreshToken, cookieOptions),
+        serialize('auth_state', 'authenticated', {
+          ...cookieOptions,
+          httpOnly: false // Allow client-side reading
+        })
+      ]);
+
+      // Return success response
+      return res.status(200).json({
+        message: 'Login successful',
+        user: userSession,
+        token: accessToken // For client-side usage if needed
+      });
+
     } finally {
       await client.close();
-      console.log('MongoDB connection closed');
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }
