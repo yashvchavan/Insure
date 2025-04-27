@@ -227,7 +227,6 @@ export default function ChatbotButton() {
 
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            // In your messages map function
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
                   <div

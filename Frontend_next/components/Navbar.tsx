@@ -54,7 +54,18 @@ export default function Navbar() {
     }
   };
 
+  const handleCallSupport = () => {
+    window.location.href = 'tel:123456789';
+  };
 
+  const handleEmailSupport = () => {
+    window.location.href = 'mailto:abc@123';
+  };
+
+  const handleChatSupport = () => {
+    // Redirect to chatbot page or open chat modal
+    window.location.href = '/chatbot';
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -120,28 +131,28 @@ export default function Navbar() {
                 <NavigationMenuContent>
                   <ul className="grid w-[200px] gap-3 p-4">
                     <li>
-                      <Link href="#" legacyBehavior passHref>
+                      <button onClick={handleCallSupport} className="w-full text-left">
                         <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                           <Phone className="mr-2 h-4 w-4" />
-                          Call Us
+                          Call Us: 123456789
                         </NavigationMenuLink>
-                      </Link>
+                      </button>
                     </li>
                     <li>
-                      <Link href="#" legacyBehavior passHref>
+                      <button onClick={handleEmailSupport} className="w-full text-left">
                         <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                           <Mail className="mr-2 h-4 w-4" />
-                          Email Us
+                          Email Us: abc@123
                         </NavigationMenuLink>
-                      </Link>
+                      </button>
                     </li>
                     <li>
-                      <Link href="#" legacyBehavior passHref>
+                      <button onClick={handleChatSupport} className="w-full text-left">
                         <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                           <MessageSquare className="mr-2 h-4 w-4" />
                           Chat Support
                         </NavigationMenuLink>
-                      </Link>
+                      </button>
                     </li>
                   </ul>
                 </NavigationMenuContent>
@@ -228,15 +239,15 @@ export default function Navbar() {
                   <ChevronDown className="h-4 w-4" />
                 </div>
                 <div className="pl-7 mt-2 space-y-2">
-                  <Link href="#" className="block p-1 rounded-md hover:bg-muted">
-                    Call Us
-                  </Link>
-                  <Link href="#" className="block p-1 rounded-md hover:bg-muted">
-                    Email Us
-                  </Link>
-                  <Link href="#" className="block p-1 rounded-md hover:bg-muted">
+                  <button onClick={handleCallSupport} className="block w-full text-left p-1 rounded-md hover:bg-muted">
+                    Call Us: 123456789
+                  </button>
+                  <button onClick={handleEmailSupport} className="block w-full text-left p-1 rounded-md hover:bg-muted">
+                    Email Us: abc@123
+                  </button>
+                  <button onClick={handleChatSupport} className="block w-full text-left p-1 rounded-md hover:bg-muted">
                     Chat Support
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
@@ -252,4 +263,3 @@ export default function Navbar() {
     </header>
   )
 }
-
