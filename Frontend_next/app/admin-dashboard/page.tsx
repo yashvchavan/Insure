@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { format } from "date-fns";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import useAuth from "@/context/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation"
+import { Textarea } from "@/components/ui/textarea";
 
 interface Application {
   _id?: string;
@@ -70,6 +72,35 @@ interface Application {
   updatedAt?: string;
 }
 
+const insuranceCompanies = [
+  { id: '1', name: 'ABC Insurance' },
+  { id: '2', name: 'XYZ Insurance' },
+  { id: '3', name: 'PQR Insurance' }
+];
+
+interface Claim {
+  _id: string;
+  claimId: string;
+  userId: string;
+  policyId: string;
+  policyName: string;
+  insuranceCompany: string;
+  incidentDate: string;
+  claimAmount: string;
+  description: string;
+  documents: Array<{
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+  }>;
+  status: 'submitted' | 'in-review' | 'approved' | 'rejected' | 'paid';
+  createdAt: string;
+  updatedAt: string;
+  reviewNotes?: string;
+  reviewedAt?: string;
+  adminEmail: string;
+}
 const policyData = [
   { month: "Jan", newPolicies: 65, renewals: 40, cancellations: 12 },
   { month: "Feb", newPolicies: 59, renewals: 45, cancellations: 10 },
@@ -109,12 +140,105 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [loadingClaims, setLoadingClaims] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
+  const [isClaimDialogOpen, setIsClaimDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !adminEmail) {
       router.push('/admin-login');
     }
   }, [isAuthenticated, adminEmail, router]);
+
+  // Add this effect to fetch claims when adminEmail changes
+
+  const fetchClaims = async () => {
+    try {
+      setLoadingClaims(true);
+      const response = await fetch(`/api/admin/claims?adminEmail=${adminEmail}`);
+      if (response.ok) {
+        const data = await response.json();
+        setClaims(data.claims || []);
+      } else {
+        throw new Error('Failed to fetch claims');
+      }
+    } catch (error) {
+      console.error('Error fetching claims:', error);
+    } finally {
+      setLoadingClaims(false);
+    }
+  };
+
+  const handleApproveClaim = async (claimId: string) => {
+    try {
+      const response = await fetch('/api/admin/claims', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          claimId,
+          status: 'approved',
+          reviewerId: adminEmail
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve claim');
+      }
+
+      setClaims(claims.map(claim => 
+        claim.claimId === claimId 
+          ? { ...claim, status: 'approved', reviewedAt: new Date().toISOString() } 
+          : claim
+      ));
+
+      toast.success('Claim approved successfully!');
+    } catch (error) {
+      console.error('Error approving claim:', error);
+      toast.error('Failed to approve claim');
+    }
+  };
+
+  const handleRejectClaim = async (claimId: string) => {
+    try {
+      const response = await fetch('/api/admin/claims', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          claimId,
+          status: 'rejected',
+          reviewNotes: rejectionReason,
+          reviewerId: adminEmail
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject claim');
+      }
+
+      setClaims(claims.map(claim => 
+        claim.claimId === claimId 
+          ? { ...claim, status: 'rejected', reviewNotes: rejectionReason, reviewedAt: new Date().toISOString() } 
+          : claim
+      ));
+
+      toast.success('Claim rejected successfully!');
+      setRejectionReason("");
+      setShowRejectDialog(false);
+    } catch (error) {
+      console.error('Error rejecting claim:', error);
+      toast.error('Failed to reject claim');
+    }
+  };
+
+  const handleViewClaim = (claim: Claim) => {
+    setSelectedClaim(claim);
+    setIsClaimDialogOpen(true);
+  };
 
   const handleApprove = async (applicationId: string) => {
     try {
@@ -198,6 +322,7 @@ export default function AdminDashboard() {
     if (adminEmail) {
       fetchPolicies();
       fetchUsers();
+      fetchClaims();
     }
   }, [adminEmail]);
 
@@ -424,89 +549,103 @@ export default function AdminDashboard() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input type="search" placeholder="Search claims..." className="pl-8 w-full sm:w-[200px]" />
+                      <Input 
+                        type="search" 
+                        placeholder="Search claims..." 
+                        className="pl-8 w-full sm:w-[200px]" 
+                        onChange={(e) => {
+                          // Implement search functionality if needed
+                        }}
+                      />
                     </div>
-                    <Button variant="outline" size="icon">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" onClick={fetchClaims}>
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Claim ID</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Policy</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>CL-1001</TableCell>
-                      <TableCell>John Doe</TableCell>
-                      <TableCell>Health Gold Plan</TableCell>
-                      <TableCell>₹1,200</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">Pending</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Review
-                          </Button>
-                          <Button variant="default" size="sm">
-                            Approve
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>CL-1002</TableCell>
-                      <TableCell>Jane Smith</TableCell>
-                      <TableCell>Vehicle Comprehensive</TableCell>
-                      <TableCell>₹3,500</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Approved</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>CL-1003</TableCell>
-                      <TableCell>Robert Johnson</TableCell>
-                      <TableCell>Home Insurance Plus</TableCell>
-                      <TableCell>₹5,800</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Rejected</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Reopen
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                {loadingClaims ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : claims.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No claims found
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Claim ID</TableHead>
+                        <TableHead>Policy</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Incident Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {claims.map((claim) => (
+                        <TableRow key={claim._id}>
+                          <TableCell>{claim.claimId}</TableCell>
+                          <TableCell>{claim.policyName}</TableCell>
+                          <TableCell>${claim.claimAmount}</TableCell>
+                          <TableCell>{format(new Date(claim.incidentDate), 'MMM d, yyyy')}</TableCell>
+                          <TableCell>
+                            {claim.status === 'submitted' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Submitted</span>
+                            )}
+                            {claim.status === 'in-review' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">In Review</span>
+                            )}
+                            {claim.status === 'approved' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Approved</span>
+                            )}
+                            {claim.status === 'rejected' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Rejected</span>
+                            )}
+                            {claim.status === 'paid' && (
+                              <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">Paid</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleViewClaim(claim)}
+                              >
+                                View
+                              </Button>
+                              {claim.status === 'submitted' || claim.status === 'in-review' ? (
+                                <>
+                                  <Button 
+                                    variant="default" 
+                                    size="sm"
+                                    onClick={() => handleApproveClaim(claim.claimId)}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedClaim(claim);
+                                      setShowRejectDialog(true);
+                                    }}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -683,6 +822,129 @@ export default function AdminDashboard() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isClaimDialogOpen} onOpenChange={setIsClaimDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto text-gray-900 bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              <div className="flex justify-between items-center">
+                <span>Claim Details</span>
+                <button 
+                  onClick={() => setIsClaimDialogOpen(false)}
+                  className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+                >
+                  <X className="h-5 w-5" />
+                  <span className="sr-only">Close</span>
+                </button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedClaim && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold mb-4">Claim Information</h3>
+                <div className="space-y-3">
+                  <p><span className="font-medium">Claim ID:</span> {selectedClaim.claimId}</p>
+                  <p><span className="font-medium">Status:</span> 
+                    <span className="ml-2 capitalize">{selectedClaim.status}</span>
+                  </p>
+                  <p><span className="font-medium">Policy:</span> {selectedClaim.policyName}</p>
+                  <p><span className="font-medium">Insurance Company:</span> 
+                    {insuranceCompanies.find(c => c.id === selectedClaim.insuranceCompany)?.name || selectedClaim.insuranceCompany}
+                  </p>
+                  <p><span className="font-medium">Claim Amount:</span> ${selectedClaim.claimAmount}</p>
+                  <p><span className="font-medium">Incident Date:</span> 
+                    {format(new Date(selectedClaim.incidentDate), 'MMM d, yyyy')}
+                  </p>
+                  <p><span className="font-medium">Submitted On:</span> 
+                    {format(new Date(selectedClaim.createdAt), 'MMM d, yyyy')}
+                  </p>
+                  {selectedClaim.reviewedAt && (
+                    <p><span className="font-medium">Reviewed On:</span> 
+                      {format(new Date(selectedClaim.reviewedAt), 'MMM d, yyyy')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-4">Claim Description</h3>
+                <div className="bg-gray-50 p-4 rounded">
+                  <p>{selectedClaim.description}</p>
+                </div>
+                
+                {selectedClaim.reviewNotes && (
+                  <>
+                    <h3 className="font-semibold mt-6 mb-4">Review Notes</h3>
+                    <div className="bg-gray-50 p-4 rounded">
+                      <p>{selectedClaim.reviewNotes}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="col-span-full">
+                <h3 className="font-semibold mb-4">Supporting Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {selectedClaim.documents.map((doc, index) => (
+                    <div key={index} className="border rounded p-3">
+                      <h4 className="font-medium capitalize">Document {index + 1}</h4>
+                      <p className="text-sm text-gray-600 truncate">{doc.name}</p>
+                      <p className="text-xs text-gray-500">{(doc.size / 1024).toFixed(2)} KB</p>
+                      <a 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm mt-2 inline-block"
+                      >
+                        View Document
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Claim</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this claim.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Enter rejection reason..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="min-h-[120px]"
+            />
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRejectDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  if (selectedClaim) {
+                    handleRejectClaim(selectedClaim.claimId);
+                  }
+                }}
+                disabled={!rejectionReason.trim()}
+              >
+                Confirm Rejection
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
