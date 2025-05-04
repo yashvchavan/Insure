@@ -4,8 +4,15 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Play, FileText, PieChart, Shield, Book, Video, Calculator } from "lucide-react"
+import { useEffect, useState } from "react"
 
 export default function LearnSection() {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   return (
     <section className="py-16 bg-muted/30 w-full">
       <div className="container px-4 mx-auto">
@@ -48,16 +55,19 @@ export default function LearnSection() {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="relative aspect-video bg-muted rounded-md mb-4 overflow-hidden">
-                  <video
-                    className="aspect-video bg-muted rounded-md mb-4"
-                    controls
-                  >
-                    <source src="/videos/Insure_learn.mp4" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Play className="h-12 w-12 text-white bg-primary/80 rounded-full p-3" />
-                    </div>
+                    {isMounted ? (
+                      <video
+                        className="aspect-video bg-muted rounded-md mb-4"
+                        controls
+                      >
+                        <source src="/videos/Insure_learn.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      <div className="aspect-video bg-muted rounded-md mb-4 flex items-center justify-center">
+                        <Play className="h-12 w-12 text-primary/80" />
+                      </div>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold mb-2">How Insurance Works</h3>
                   <p className="text-muted-foreground">

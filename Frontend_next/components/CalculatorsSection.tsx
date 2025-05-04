@@ -138,9 +138,11 @@ export default function CalculatorsSection() {
                           step={10000}
                           onValueChange={(value) => setPremiumInputs({ ...premiumInputs, coverageAmount: value[0] })}
                         />
-                        <div className="flex justify-between">
+                        <div suppressHydrationWarning className="flex justify-between">
                           <span className="text-sm text-muted-foreground">₹50,000</span>
-                          <span className="text-sm font-medium">₹{premiumInputs.coverageAmount.toLocaleString()}</span>
+                          <span className="text-sm font-medium">
+                            ₹{premiumInputs.coverageAmount.toLocaleString('en-IN')}
+                          </span>
                           <span className="text-sm text-muted-foreground">₹1,000,000</span>
                         </div>
                       </div>
