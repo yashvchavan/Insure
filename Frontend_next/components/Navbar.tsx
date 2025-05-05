@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -23,12 +23,11 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
 import { User, ChevronDown, FileText, Lock, Phone, Mail, MessageSquare, Bell, Menu, X } from "lucide-react"
-import axios from "axios"
-import useAuthlogout from "@/context/store"
 import useAuth from "@/context/store"
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { useAuthlogout } = useAuth()
 
   const handleLogout = async () => {
     try {
@@ -40,11 +39,7 @@ export default function Navbar() {
       const data = await response.json();
   
       if (data.success) {
-        // Clear Zustand store
-        const { useAuthlogout } = useAuth.getState();
         useAuthlogout();
-        
-        // Redirect
         window.location.href = data.redirectTo;
       } else {
         console.error('Logout failed:', data.message);
@@ -63,7 +58,6 @@ export default function Navbar() {
   };
 
   const handleChatSupport = () => {
-    // Redirect to chatbot page or open chat modal
     window.location.href = '/chatbot';
   };
 
@@ -90,70 +84,61 @@ export default function Navbar() {
                 <NavigationMenuTrigger>Account</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid gap-3 p-4 md:w-[100px] lg:w-[200px] lg:grid-cols-1">
-                    
-                    <li>
-                      <Link href="/user-login" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>User Login</NavigationMenuLink>
+                    <NavigationMenuItem>
+                      <Link href="/user-login" className={navigationMenuTriggerStyle()}>
+                        User Login
                       </Link>
-                    </li>
-                    <li>
-                      <Link href="/admin-login" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>Admin Login</NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <Link href="/admin-login" className={navigationMenuTriggerStyle()}>
+                        Admin Login
                       </Link>
-                    </li>
-                    <li>
-                      <Link href="/user-register" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>Register</NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <Link href="/user-register" className={navigationMenuTriggerStyle()}>
+                        Register
                       </Link>
-                    </li>
-                    <li>
-                      <button onClick={handleLogout}>
-                        <Link href="/" legacyBehavior passHref>
-                          <NavigationMenuLink className={navigationMenuTriggerStyle()}>Logout</NavigationMenuLink>
-                        </Link>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <button onClick={handleLogout} className={navigationMenuTriggerStyle()}>
+                        Logout
                       </button>
-                    </li>
+                    </NavigationMenuItem>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/claims" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>Claims</NavigationMenuLink>
+                <Link href="/claims" className={navigationMenuTriggerStyle()}>
+                  Claims
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/vault" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>Vault</NavigationMenuLink>
+                <Link href="/vault" className={navigationMenuTriggerStyle()}>
+                  Vault
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Support</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[200px] gap-3 p-4">
-                    <li>
-                      <button onClick={handleCallSupport} className="w-full text-left">
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          <Phone className="mr-2 h-4 w-4" />
-                          Call Us: 123456789
-                        </NavigationMenuLink>
+                    <NavigationMenuItem>
+                      <button onClick={handleCallSupport} className={navigationMenuTriggerStyle()}>
+                        <Phone className="mr-2 h-4 w-4" />
+                        Call Us: 123456789
                       </button>
-                    </li>
-                    <li>
-                      <button onClick={handleEmailSupport} className="w-full text-left">
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Email Us: abc@123
-                        </NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <button onClick={handleEmailSupport} className={navigationMenuTriggerStyle()}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Email Us: abc@123
                       </button>
-                    </li>
-                    <li>
-                      <button onClick={handleChatSupport} className="w-full text-left">
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          Chat Support
-                        </NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <button onClick={handleChatSupport} className={navigationMenuTriggerStyle()}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Chat Support
                       </button>
-                    </li>
+                    </NavigationMenuItem>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
