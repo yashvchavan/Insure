@@ -101,23 +101,6 @@ interface Claim {
   reviewedAt?: string;
   adminEmail: string;
 }
-const policyData = [
-  { month: "Jan", newPolicies: 65, renewals: 40, cancellations: 12 },
-  { month: "Feb", newPolicies: 59, renewals: 45, cancellations: 10 },
-  { month: "Mar", newPolicies: 80, renewals: 52, cancellations: 15 },
-  { month: "Apr", newPolicies: 81, renewals: 56, cancellations: 14 },
-  { month: "May", newPolicies: 56, renewals: 60, cancellations: 8 },
-  { month: "Jun", newPolicies: 55, renewals: 50, cancellations: 9 },
-];
-
-const claimsData = [
-  { month: "Jan", submitted: 45, approved: 30, rejected: 15 },
-  { month: "Feb", submitted: 50, approved: 35, rejected: 15 },
-  { month: "Mar", submitted: 60, approved: 40, rejected: 20 },
-  { month: "Apr", submitted: 70, approved: 50, rejected: 20 },
-  { month: "May", submitted: 65, approved: 45, rejected: 20 },
-  { month: "Jun", submitted: 80, approved: 60, rejected: 20 },
-];
 
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -151,8 +134,6 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, adminEmail, router]);
 
-  // Add this effect to fetch claims when adminEmail changes
-
   const fetchClaims = async () => {
     try {
       setLoadingClaims(true);
@@ -169,6 +150,63 @@ export default function AdminDashboard() {
       setLoadingClaims(false);
     }
   };
+
+  // Calculate metrics for Overview section
+  const totalUsers = users.length;
+  const activePolicies = policies.reduce((sum, policy) => sum + (policy.subcribers || 0), 0);
+  const monthlyRevenue = policies.reduce((sum, policy) => sum + (policy.revenue || 0), 0);
+  
+  // Calculate user growth (assuming we have creation dates)
+  const newUsersThisMonth = users.filter(user => {
+    // This is a simplified calculation - you'd need actual creation dates
+    return true; // Placeholder - adjust based on your data
+  }).length;
+  const userGrowthPercentage = totalUsers > 0 ? 
+    Math.round((newUsersThisMonth / totalUsers) * 100) : 0;
+
+  // Calculate policy growth
+  const newPoliciesThisMonth = policies.length; // Simplified
+  const policyGrowthPercentage = activePolicies > 0 ? 
+    Math.round((newPoliciesThisMonth / activePolicies) * 100) : 0;
+
+  // Calculate revenue growth
+  const revenueGrowthPercentage = monthlyRevenue > 0 
+    ? Math.round((monthlyRevenue / (monthlyRevenue * 0.85)) * 100 - 100)
+    : 0; // Simplified
+
+  // Prepare policy statistics data
+  const preparePolicyStatistics = () => {
+    // Group by month - this is simplified, you'd need actual dates in your data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map(month => ({
+      month,
+      newPolicies: Math.floor(Math.random() * 20) + 40, // Replace with actual data
+      renewals: Math.floor(Math.random() * 15) + 30, // Replace with actual data
+      cancellations: Math.floor(Math.random() * 5) + 5 // Replace with actual data
+    }));
+  };
+
+  const policyStatisticsData = preparePolicyStatistics();
+
+  // Prepare claims overview data
+  const prepareClaimsOverview = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map(month => {
+      const submitted = claims.filter(claim => {
+        // Simplified - you'd need to check actual dates
+        return true;
+      }).length;
+      
+      return {
+        month,
+        submitted,
+        approved: Math.floor(submitted * 0.7), // Replace with actual approved count
+        rejected: Math.floor(submitted * 0.3) // Replace with actual rejected count
+      };
+    });
+  };
+
+  const claimsOverviewData = prepareClaimsOverview();
 
   const handleApproveClaim = async (claimId: string) => {
     try {
@@ -254,7 +292,6 @@ export default function AdminDashboard() {
         throw new Error('Failed to approve application');
       }
   
-      // Update the local state to reflect the change
       setUsers(users.map(user => 
         user.applicationId === applicationId 
           ? { ...user, status: 'approved' } 
@@ -331,9 +368,7 @@ export default function AdminDashboard() {
       console.log(adminEmail);
       const response = await axios.get(`/api/display-application?email=${adminEmail}`);
       setUsers(response.data.application || []);
-      
       console.log("Application:", response.data.application);
-
       setLoading(false);
     }catch (error) {
       console.error("Error fetching applications:", error);
@@ -345,15 +380,12 @@ export default function AdminDashboard() {
     console.log("Application:", users);
   }, [users]);
 
-
   const fetchPolicies = async () => {
     try {
       console.log(adminEmail);
       const response = await axios.get(`/api/display-admin-policy?email=${adminEmail}`);
       setPolicies(response.data.admin || []);
-      
       console.log("Policies:", response.data.admin);
-
       setLoading(false);
     } catch (error) {
       console.error("Error fetching policies:", error);
@@ -393,9 +425,13 @@ export default function AdminDashboard() {
                   <CardTitle>Total Users</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">2,543</div>
+                  <div className="text-4xl font-bold">{totalUsers}</div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    <span className="text-green-500">↑ 12%</span> from last month
+                    {userGrowthPercentage > 0 ? (
+                      <span className="text-green-500">↑ {userGrowthPercentage}%</span>
+                    ) : (
+                      <span className="text-red-500">↓ {Math.abs(userGrowthPercentage)}%</span>
+                    )} from last month
                   </p>
                 </CardContent>
               </Card>
@@ -405,9 +441,13 @@ export default function AdminDashboard() {
                   <CardTitle>Active Policies</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">3,879</div>
+                  <div className="text-4xl font-bold">{activePolicies}</div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    <span className="text-green-500">↑ 8%</span> from last month
+                    {policyGrowthPercentage > 0 ? (
+                      <span className="text-green-500">↑ {policyGrowthPercentage}%</span>
+                    ) : (
+                      <span className="text-red-500">↓ {Math.abs(policyGrowthPercentage)}%</span>
+                    )} from last month
                   </p>
                 </CardContent>
               </Card>
@@ -417,9 +457,13 @@ export default function AdminDashboard() {
                   <CardTitle>Monthly Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">₹128,450</div>
+                  <div className="text-4xl font-bold">₹{monthlyRevenue.toLocaleString()}</div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    <span className="text-green-500">↑ 15%</span> from last month
+                    {revenueGrowthPercentage > 0 ? (
+                      <span className="text-green-500">↑ {revenueGrowthPercentage}%</span>
+                    ) : (
+                      <span className="text-red-500">↓ {Math.abs(revenueGrowthPercentage)}%</span>
+                    )} from last month
                   </p>
                 </CardContent>
               </Card>
@@ -432,7 +476,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={policyData}>
+                  <BarChart data={policyStatisticsData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -453,7 +497,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={claimsData}>
+                  <LineChart data={claimsOverviewData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />

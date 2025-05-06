@@ -45,7 +45,6 @@ export default function Home() {
       <CalculatorsSection />
       <AboutSection />
       <RewardsSection />
-      <PdfSummarizerFrontend /> {/* Include the PDF Summarizer component */}
       <div className="w-full">
         <Footer />
       </div>
