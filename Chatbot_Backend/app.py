@@ -34,7 +34,7 @@ allowed_origins.extend(vercel_domains)
 
 # Configure CORS with more permissive settings for development
 CORS(app, 
-     resources={r"/api/*": {"origins": allowed_origins}},
+     resources={r"/*": {"origins": allowed_origins}},
      supports_credentials=True,
      methods=["GET", "POST", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"])
@@ -43,12 +43,29 @@ CORS(app,
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in allowed_origins or any(origin.endswith('.vercel.app') for origin in allowed_origins if '*' in origin):
-        response.headers.add('Access-Control-Allow-Origin', origin)
+    if origin:
+        # Allow any Vercel domain
+        if origin.endswith('.vercel.app') or origin in allowed_origins:
+            response.headers.add('Access-Control-Allow-Origin', origin)
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
+
+# Add root endpoint to handle 404 errors
+@app.route("/", methods=["GET", "OPTIONS"])
+def root():
+    """Root endpoint"""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "preflight"}), 200
+    return jsonify({
+        "message": "InsureEase Chatbot API",
+        "status": "running",
+        "endpoints": {
+            "health": "/api/health",
+            "chat": "/api/chat"
+        }
+    }), 200
 
 class UltraSimpleFAQChatBot:
     """Ultra-simple FAQ Chatbot using basic keyword matching"""
@@ -152,7 +169,11 @@ def handle_chat():
         if not user_query:
             return jsonify({"error": "Empty query"}), 400
             
+        logger.info(f"Received query: {user_query}")
+        
         response, confidence = chatbot.find_best_match(user_query)
+        
+        logger.info(f"Response: {response[:100]}... (confidence: {confidence})")
         
         # Parse the response if it's JSON (for navigation)
         try:
