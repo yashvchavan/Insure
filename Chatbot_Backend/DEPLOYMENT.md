@@ -6,7 +6,20 @@ This guide will help you deploy the chatbot and voice navigation services to Ren
 
 - Render account
 - Git repository with your backend code
-- Python 3.8+ support
+- Python 3.11+ support (recommended)
+
+## Important: Python Version Compatibility
+
+Render may use Python 3.13 by default, which can cause compatibility issues. We've provided multiple solutions:
+
+### Solution 1: Force Python 3.11 (Recommended)
+Add a `runtime.txt` file to your repository:
+```
+python-3.11
+```
+
+### Solution 2: Use Compatible Requirements
+Use the updated requirements files that work with Python 3.13.
 
 ## Service 1: Chatbot Service
 
@@ -40,12 +53,17 @@ Add these environment variables in Render:
 
 ```
 FRONTEND_URL=https://your-vercel-app.vercel.app
-PYTHON_VERSION=3.9
+PYTHON_VERSION=3.11
 ```
 
 ### 4. Files Required
 
 Ensure these files are in your repository:
+
+**runtime.txt:**
+```
+python-3.11
+```
 
 **requirements.txt:**
 ```
@@ -54,17 +72,17 @@ flask==2.3.3
 flask-cors==4.0.0
 gunicorn==21.2.0
 
-# Data processing - using older, more stable versions
-numpy==1.21.6
-pandas==1.3.5
-scikit-learn==1.1.3
+# Data processing - using versions compatible with Python 3.13
+numpy==1.26.4
+pandas==2.1.4
+scikit-learn==1.3.2
 
 # HTTP requests
-requests==2.28.2
+requests==2.31.0
 
 # Additional dependencies for better compatibility
-setuptools==65.5.1
-wheel==0.38.4
+setuptools==69.0.3
+wheel==0.42.0
 ```
 
 **insurance_dataset.csv** - Your FAQ dataset
@@ -105,12 +123,17 @@ Add these environment variables in Render:
 
 ```
 FRONTEND_URL=https://your-vercel-app.vercel.app
-PYTHON_VERSION=3.9
+PYTHON_VERSION=3.11
 ```
 
 ### 4. Files Required
 
 Ensure these files are in your repository:
+
+**runtime.txt:**
+```
+python-3.11
+```
 
 **requirements_voice.txt:**
 ```
@@ -125,23 +148,42 @@ gTTS==2.3.2
 pydub==0.25.1
 
 # HTTP requests
-requests==2.28.2
+requests==2.31.0
 
 # Additional dependencies for better compatibility
-setuptools==65.5.1
-wheel==0.38.4
+setuptools==69.0.3
+wheel==0.42.0
 ```
 
 ## Alternative Deployment Strategy (If scikit-learn fails)
 
 If you continue to have issues with scikit-learn compilation, consider these alternatives:
 
-### Option 1: Use Pre-built Docker Images
+### Option 1: Use Simple Chatbot (No scikit-learn)
+
+1. **Replace `app.py` with `app_simple.py`**
+2. **Use `requirements_simple.txt`**
+3. **Update build command:**
+   ```bash
+   pip install --upgrade pip setuptools wheel
+   pip install -r requirements_simple.txt
+   ```
+
+### Option 2: Use Minimal Requirements
+
+Use `requirements_minimal.txt` which uses flexible version requirements:
+
+```bash
+pip install --upgrade pip setuptools wheel
+pip install -r requirements_minimal.txt
+```
+
+### Option 3: Use Pre-built Docker Images
 
 Create a `Dockerfile` for the chatbot service:
 
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -163,7 +205,7 @@ EXPOSE 5000
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
 ```
 
-### Option 2: Use Railway Instead of Render
+### Option 4: Use Railway Instead of Render
 
 Railway often has better compatibility with scikit-learn:
 
@@ -171,37 +213,6 @@ Railway often has better compatibility with scikit-learn:
 2. Connect your GitHub repository
 3. Deploy as a web service
 4. Set environment variables in Railway dashboard
-
-### Option 3: Simplify Chatbot (Remove scikit-learn)
-
-If scikit-learn continues to cause issues, you can create a simpler chatbot:
-
-```python
-# Simple keyword-based chatbot instead of ML-based
-def find_best_match(user_query: str) -> Tuple[str, float]:
-    """Simple keyword-based matching"""
-    user_query = user_query.lower().strip()
-    
-    # Simple keyword matching
-    keywords = {
-        "policy": "You can view and manage your policies in the user dashboard.",
-        "claim": "To file a claim, please visit the claims section.",
-        "health": "We offer comprehensive health insurance policies.",
-        "vehicle": "Our vehicle insurance covers cars, bikes, and commercial vehicles.",
-        "home": "Protect your home with our comprehensive home insurance.",
-        "travel": "Travel with peace of mind with our travel insurance.",
-        "business": "We offer various business insurance solutions.",
-        "premium": "Premium calculations are available in our calculator section.",
-        "contact": "You can contact our support team at support@insure.com",
-        "help": "I'm here to help! You can ask about policies, claims, or insurance types."
-    }
-    
-    for keyword, response in keywords.items():
-        if keyword in user_query:
-            return response, 0.8
-    
-    return "I'm sorry, I don't have an answer for that. Please contact our support team.", 0.0
-```
 
 ## Frontend Configuration
 
@@ -264,25 +275,30 @@ Expected response:
 
 ### Common Issues
 
-1. **scikit-learn Compilation Errors**
-   - Use the updated requirements.txt with older versions
-   - Try the alternative deployment strategies above
-   - Consider using Railway instead of Render
+1. **Python Version Compatibility**
+   - Add `runtime.txt` with `python-3.11`
+   - Use compatible package versions
+   - Check Python version in Render logs
 
-2. **CORS Errors**
+2. **scikit-learn Compilation Errors**
+   - Use the simple chatbot version
+   - Try minimal requirements
+   - Consider Railway deployment
+
+3. **CORS Errors**
    - Ensure `FRONTEND_URL` is set correctly in Render
    - Check that your Vercel domain is included in allowed origins
 
-3. **Service Not Starting**
+4. **Service Not Starting**
    - Check the build logs in Render
    - Ensure all required files are in the repository
    - Verify the start command is correct
 
-4. **Import Errors**
+5. **Import Errors**
    - Make sure all dependencies are in `requirements.txt`
    - Check Python version compatibility
 
-5. **File Not Found Errors**
+6. **File Not Found Errors**
    - Ensure `insurance_dataset.csv` is in the repository
    - Check file paths in the code
 
@@ -351,4 +367,5 @@ If you encounter issues:
 3. Test endpoints individually
 4. Verify environment variables
 5. Check CORS configuration
-6. Try alternative deployment strategies if scikit-learn fails 
+6. Try alternative deployment strategies if scikit-learn fails
+7. Check Python version compatibility 

@@ -1,0 +1,15 @@
+# Core Flask dependencies
+flask==2.3.3
+flask-cors==4.0.0
+gunicorn==21.2.0
+
+# Data processing - minimal versions
+numpy>=1.26.0
+pandas>=2.1.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Additional dependencies
+setuptools>=69.0.0
+wheel>=0.42.0 
