@@ -9,6 +9,7 @@ import { LoginRequest, LoginResponse } from '@/types/login';
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const ACCESS_TOKEN_EXPIRES_IN = '15m'; // 15 minutes
 const REFRESH_TOKEN_EXPIRES_IN = '7d'; // 7 days
+
 // Add at the start of your handler function
 export default async function handler(
   req: NextApiRequest,
@@ -59,14 +60,6 @@ export default async function handler(
         role: 'user' as const,
       };
 
-      const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        path: '/',
-        sameSite: 'strict' as const,
-        domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
-      };
       // Generate JWT tokens
       const accessToken = jwt.sign(
         { userId: userSession.id, role: userSession.role },
@@ -79,6 +72,27 @@ export default async function handler(
         JWT_SECRET,
         { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
       );
+
+      // Determine if we're in production
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      // Get the host from the request headers
+      const host = req.headers.host || '';
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+      
+      // Base cookie options
+      const baseCookieOptions = {
+        httpOnly: true,
+        secure: isProduction && !isLocalhost, // Only secure in production and not localhost
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        path: '/',
+        sameSite: 'lax' as const, // Changed from 'strict' to 'lax' for better compatibility
+      };
+
+      // Set domain only in production and not for localhost
+      const cookieOptions = isProduction && !isLocalhost 
+        ? { ...baseCookieOptions, domain: undefined } // Let the browser set the domain automatically
+        : baseCookieOptions;
 
       // Set HTTP-only cookies
       res.setHeader('Set-Cookie', [

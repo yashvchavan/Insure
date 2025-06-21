@@ -12,28 +12,29 @@ export default async function handler(
   }
 
   try {
+    // Determine if we're in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Get the host from the request headers
+    const host = req.headers.host || '';
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    
+    // Base cookie options for clearing
+    const baseCookieOptions = {
+      httpOnly: true,
+      secure: isProduction && !isLocalhost,
+      expires: new Date(0), // Expire immediately
+      path: '/',
+      sameSite: 'lax' as const, // Match login configuration
+    };
+
     // Clear all auth cookies
     const cookies = [
-      serialize('access_token', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        expires: new Date(0),
-        path: '/',
-        sameSite: 'strict',
-      }),
-      serialize('refresh_token', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        expires: new Date(0),
-        path: '/',
-        sameSite: 'strict',
-      }),
+      serialize('access_token', '', baseCookieOptions),
+      serialize('refresh_token', '', baseCookieOptions),
       serialize('auth_state', '', {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        expires: new Date(0),
-        path: '/',
-        sameSite: 'strict',
+        ...baseCookieOptions,
+        httpOnly: false // Match login configuration
       })
     ];
 
