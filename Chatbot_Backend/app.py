@@ -15,9 +15,17 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Get the frontend URL from environment variable, with fallback for local development
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-CORS(app, resources={r"/api/*": {"origins": frontend_url}})
+# Get the frontend URL from environment variable
+prod_frontend_url = os.environ.get("FRONTEND_URL")
+
+# Define allowed origins
+# We always allow localhost for development.
+# If a production URL is set, we add that to the list.
+allowed_origins = ["http://localhost:3000"]
+if prod_frontend_url:
+    allowed_origins.append(prod_frontend_url)
+
+CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
 class FAQChatBot:
     """FAQ Chatbot using TF-IDF and cosine similarity"""
