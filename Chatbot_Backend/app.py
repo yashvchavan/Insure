@@ -7,13 +7,17 @@ import numpy as np
 import logging
 from typing import Tuple, Dict, Any
 import json
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Get the frontend URL from environment variable, with fallback for local development
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+CORS(app, resources={r"/api/*": {"origins": frontend_url}})
 
 class FAQChatBot:
     """FAQ Chatbot using TF-IDF and cosine similarity"""
@@ -116,4 +120,4 @@ def health_check():
     return jsonify({"status": "healthy"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True) 

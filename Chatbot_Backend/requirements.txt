@@ -6,4 +6,4 @@ numpy
 gTTS
 pydub
 SpeechRecognition
-gunicorn
+gunicorn 

@@ -9,7 +9,10 @@ from pydub import AudioSegment
 
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend-backend communication
+
+# Get the frontend URL from environment variable, with fallback for local development
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+CORS(app, origins=[frontend_url])  # Enable CORS for frontend-backend communication
 
 # Ensure necessary folders exist
 UPLOAD_FOLDER = "uploads"
@@ -220,4 +223,4 @@ def get_audio(filename):
     return jsonify({"error": "File not found"}), 404
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001) 
