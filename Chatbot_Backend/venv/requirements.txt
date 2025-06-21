@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+pandas
+scikit-learn
+numpy
+gTTS
+pydub
+SpeechRecognition
+gunicorn 
