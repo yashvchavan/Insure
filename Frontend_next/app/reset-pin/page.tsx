@@ -8,9 +8,11 @@ const dbName = process.env.MONGODB_DB;
 export default async function ResetPinPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: Promise<{ token?: string }>;
 }) {
-  if (!searchParams.token) {
+  const params = await searchParams;
+  
+  if (!params.token) {
     redirect('/vault');
   }
 
@@ -18,7 +20,7 @@ export default async function ResetPinPage({
   const db = client.db(dbName);
   
   const tokenData = await db.collection('pinResetTokens').findOne({
-    token: searchParams.token,
+    token: params.token,
     used: false,
     expiresAt: { $gt: new Date() }
   });
@@ -33,7 +35,7 @@ export default async function ResetPinPage({
   return (
     <div className="container mx-auto py-12 px-4 max-w-md">
       <h1 className="text-2xl font-bold mb-6">Reset Your Vault PIN</h1>
-      <ResetPinForm userId={tokenData.userId} token={searchParams.token} />
+      <ResetPinForm userId={tokenData.userId} token={params.token} />
     </div>
   );
 }

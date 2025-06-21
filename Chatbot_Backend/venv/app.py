@@ -47,30 +47,6 @@ class FAQChatBot:
         """Find the best matching FAQ answer with confidence score"""
         user_query = user_query.lower().strip()
         
-        # Navigation commands mapping
-        navigation_commands = {
-            'policy': {'terms': ['policy', 'my policy', 'show policy'], 'url': '/user-dashboard'},
-            'claims': {'terms': ['claim', 'claims', 'file claim'], 'url': '/claims'},
-            'vault': {'terms': ['open vault', 'my vault', 'vault'], 'url': '/vault'},
-            'health': {'terms': ['health', 'health policy', 'health insurance'], 'url': '/policy/health'},
-            'vechile': {'terms': ['vechile', 'vechile policy', 'vechile insurance'], 'url': '/policy/vechile'},
-            'life': {'terms': ['life', 'life policy', 'life insurance'], 'url': '/policy/life'},
-            'home': {'terms': ['home', 'home policy', 'home insurance'], 'url': '/policy/home'},
-            'travel': {'terms': ['travel', 'travel policy', 'travel insurance'], 'url': '/policy/travel'},
-            'business': {'terms': ['business', 'business policy', 'business insurance'], 'url': '/policy/business'},
-            'calculator': {'terms': ['calculator', 'calculate', 'premium'], 'url': '/calculator'},
-            'home': {'terms': ['home', 'main page'], 'url': '/'}
-        }
-        
-        # Check for navigation commands first
-        for command, data in navigation_commands.items():
-            if any(term in user_query for term in data['terms']):
-                return json.dumps({
-                    'response': f"I'll take you to the {command} section",
-                    'action': 'navigate',
-                    'url': data['url']
-                }), 1.0
-        
         # If not a navigation command, proceed with regular FAQ matching
         try:
             query_vec = self.vectorizer.transform([user_query])

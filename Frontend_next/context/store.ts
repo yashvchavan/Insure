@@ -7,11 +7,13 @@ interface AuthState {
   user: UserSession | null;
   isAuthenticated: boolean;
   adminEmail: string | null;
+  activeModal: 'chatbot' | 'voice' | null;
   useAuthlogin: (newUser: UserSession) => void;
   useAuthlogout: () => void;
   setAdminEmail: (email: string) => void;
   login: (userData: any) => void;
   logout: () => void;
+  setActiveModal: (modal: 'chatbot' | 'voice' | null) => void;
 }
 
 const useAuth = create(
@@ -20,6 +22,7 @@ const useAuth = create(
       user: null,
       isAuthenticated: false,
       adminEmail: null,
+      activeModal: null,
       useAuthlogin: (newUser) => {
         set({ 
           user: newUser,
@@ -33,6 +36,7 @@ const useAuth = create(
       setAdminEmail: (email) => set({ adminEmail: email }),
       login: (userData) => set({ user: userData, isAuthenticated: true }),
       logout: () => set({ user: null, isAuthenticated: false, adminEmail: null }),
+      setActiveModal: (modal) => set({ activeModal: modal }),
     }),
     {
       name: "auth-storage",

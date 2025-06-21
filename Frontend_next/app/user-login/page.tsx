@@ -22,7 +22,8 @@ export default function UserLoginPage() {
   
   const [error, setError] = useState('')
   const router = useRouter()
-  const { useAuthlogin } = useAuth()
+  const { login } = useAuth()
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -38,7 +39,7 @@ export default function UserLoginPage() {
       
       if (response.ok) {
         // 1. Update Zustand store
-        useAuthlogin(data.user);
+        login(data.user);
         
         // 2. Store token in localStorage/sessionStorage if needed
         if (data.token) {
@@ -100,9 +101,5 @@ export default function UserLoginPage() {
       </motion.div>
     </div>
   )
-}
-
-function setError(arg0: any) {
-  throw new Error("Function not implemented.")
 }
 

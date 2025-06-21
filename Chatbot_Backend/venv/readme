@@ -2,7 +2,7 @@
 pip install -r requirement.txt
 
 2. step to run do this one by one :
-cd ChatBackend
+cd Chatbot_Backend
 venv\Scripts\activate
 cd venv
 python app.py

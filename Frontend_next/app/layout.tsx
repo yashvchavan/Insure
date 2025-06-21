@@ -10,6 +10,8 @@ import { ThemeProvider } from "@/components/ThemeProvider"
 import Link from "next/link"
 import { User } from "lucide-react"
 import Footer from "@/components/Footer"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -47,6 +49,18 @@ export default function RootLayout({
               </Link>
             </div>
           </div>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
         </ThemeProvider>
       </body>
     </html>

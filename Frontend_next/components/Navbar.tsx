@@ -27,7 +27,7 @@ import useAuth from "@/context/store"
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { useAuthlogout } = useAuth()
+  const { logout } = useAuth()
 
   const handleLogout = async () => {
     try {
@@ -39,7 +39,7 @@ export default function Navbar() {
       const data = await response.json();
   
       if (data.success) {
-        useAuthlogout();
+        logout();
         window.location.href = data.redirectTo;
       } else {
         console.error('Logout failed:', data.message);

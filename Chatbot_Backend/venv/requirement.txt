@@ -1,4 +1,9 @@
 Flask
+Flask-Cors
 pandas
 scikit-learn
-flask-cors
+numpy
+gTTS
+pydub
+SpeechRecognition
+gunicorn

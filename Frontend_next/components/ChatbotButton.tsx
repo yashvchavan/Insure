@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, X, Send, Mic, Volume2, VolumeX } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import useAuth from "@/context/store"
 
 export default function ChatbotButton() {
-  const [isOpen, setIsOpen] = useState(false)
+  const { activeModal, setActiveModal } = useAuth()
+  const isOpen = activeModal === 'chatbot'
   const [messages, setMessages] = useState<{ text: string; isUser: boolean; action?: string; url?: string }[]>([
     { text: "Hello! I'm your AI assistant. How can I help you with insurance today?", isUser: false },
   ])
@@ -82,7 +84,8 @@ export default function ChatbotButton() {
     setMessages((prev) => [...prev, userMessage]);
   
     try {
-      const response = await fetch("http://localhost:5000/api/chat", {
+      const apiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || "http://localhost:5000/api/chat";
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,32 +95,16 @@ export default function ChatbotButton() {
       
       const data = await response.json();
       
-      // Check if response contains navigation action
-      if (data.action === 'navigate') {
-        const botMessage = { 
-          text: data.response, 
-          isUser: false,
-          action: 'navigate',
-          url: data.url
-        };
-        setMessages((prev) => [...prev, botMessage]);
-        
-        // Add slight delay for better UX
-        setTimeout(() => {
-          window.location.href = data.url;
-        }, 1500);
-      } else {
-        // Regular response handling
-        const botMessage = { 
-          text: data.response, 
-          isUser: false 
-        };
-        setMessages((prev) => [...prev, botMessage]);
-        
-        // Speak the response if TTS is enabled
-        if (speechSupported.synthesis) {
-          speak(data.response);
-        }
+      // Regular response handling (no navigation)
+      const botMessage = { 
+        text: data.response, 
+        isUser: false 
+      };
+      setMessages((prev) => [...prev, botMessage]);
+      
+      // Speak the response if TTS is enabled
+      if (speechSupported.synthesis) {
+        speak(data.response);
       }
     } catch (error) {
       console.error("Error communicating with chatbot API:", error);
@@ -182,7 +169,7 @@ export default function ChatbotButton() {
         className="fixed bottom-4 right-4 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg z-40"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setActiveModal(isOpen ? null : 'chatbot')}
       >
         <MessageSquare className="h-6 w-6" />
       </motion.button>
@@ -217,7 +204,7 @@ export default function ChatbotButton() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setActiveModal(null)}
                   className="text-primary-foreground hover:bg-primary/90"
                 >
                   <X className="h-4 w-4" />

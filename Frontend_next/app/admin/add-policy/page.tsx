@@ -20,7 +20,7 @@ import useAuth from "@/context/store";
 export default function AddPolicyPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { email } = useAuth();
+  const { adminEmail } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -36,7 +36,7 @@ export default function AddPolicyPage() {
     termsAndConditions: [""],
     isPopular: false,
     status: "active",
-    createdBy: email,
+    createdBy: adminEmail,
     subcribers:0,
     revenue:0,
     // minAge: "",

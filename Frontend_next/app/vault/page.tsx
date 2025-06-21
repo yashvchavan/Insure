@@ -15,6 +15,7 @@ import { uploadDocuments, fetchDocuments, deleteDocument } from "@/services/docu
 import { UploadDocumentResponse, IDocument } from '@/types/document';
 import router from "next/router"
 import { useRouter } from "next/navigation"
+import { toast } from "react-toastify"
 
 export default function VaultPage() {
   const [pinVerified, setPinVerified] = useState(false)
@@ -48,9 +49,9 @@ export default function VaultPage() {
         try {
           const docs = await fetchDocuments(user.id);
           setUserDocuments(docs);
-          console.log("Documents", docs); // Check what's actually being returned
         } catch (error) {
           console.error('Failed to load documents:', error);
+          toast.error('Failed to load documents');
         } finally {
           setIsLoading(false);
         }
@@ -97,18 +98,11 @@ export default function VaultPage() {
       const updatedDocs = await fetchDocuments(user.id);
       setUserDocuments(updatedDocs);
       
-      console.log({
-        title: "Upload successful",
-        description: `${result.documents.length} file(s) uploaded successfully`,
-      });
+      toast.success(`${result.documents.length} file(s) uploaded successfully`);
       
       setFiles([]);
     } catch (error) {
-      console.log({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload documents",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to upload documents");
     } finally {
       setIsUploading(false);
     }
@@ -122,13 +116,9 @@ export default function VaultPage() {
       await deleteDocument(documentId, user.id);
       const updatedDocs = await fetchDocuments(user.id);
       setUserDocuments(updatedDocs);
-      console.log({ title: "Document deleted successfully" });
+      toast.success("Document deleted successfully");
     } catch (error) {
-      console.log({
-        title: "Delete failed",
-        description: error instanceof Error ? error.message : "Failed to delete document",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : "Failed to delete document");
     }
   };
 
