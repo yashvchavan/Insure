@@ -25,6 +25,7 @@ This guide will help you deploy the chatbot and voice navigation services to Ren
 
 **Build Command:**
 ```bash
+pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
@@ -48,12 +49,22 @@ Ensure these files are in your repository:
 
 **requirements.txt:**
 ```
+# Core Flask dependencies
 flask==2.3.3
 flask-cors==4.0.0
-pandas==2.0.3
-scikit-learn==1.3.0
-numpy==1.24.3
 gunicorn==21.2.0
+
+# Data processing - using older, more stable versions
+numpy==1.21.6
+pandas==1.3.5
+scikit-learn==1.1.3
+
+# HTTP requests
+requests==2.28.2
+
+# Additional dependencies for better compatibility
+setuptools==65.5.1
+wheel==0.38.4
 ```
 
 **insurance_dataset.csv** - Your FAQ dataset
@@ -79,7 +90,8 @@ Click "Create Web Service" and wait for deployment.
 
 **Build Command:**
 ```bash
-pip install -r requirements.txt
+pip install --upgrade pip setuptools wheel
+pip install -r requirements_voice.txt
 ```
 
 **Start Command:**
@@ -100,14 +112,95 @@ PYTHON_VERSION=3.9
 
 Ensure these files are in your repository:
 
-**requirements.txt:**
+**requirements_voice.txt:**
 ```
+# Core Flask dependencies
 flask==2.3.3
 flask-cors==4.0.0
+gunicorn==21.2.0
+
+# Voice processing
 SpeechRecognition==3.10.0
 gTTS==2.3.2
 pydub==0.25.1
-gunicorn==21.2.0
+
+# HTTP requests
+requests==2.28.2
+
+# Additional dependencies for better compatibility
+setuptools==65.5.1
+wheel==0.38.4
+```
+
+## Alternative Deployment Strategy (If scikit-learn fails)
+
+If you continue to have issues with scikit-learn compilation, consider these alternatives:
+
+### Option 1: Use Pre-built Docker Images
+
+Create a `Dockerfile` for the chatbot service:
+
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+EXPOSE 5000
+
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
+```
+
+### Option 2: Use Railway Instead of Render
+
+Railway often has better compatibility with scikit-learn:
+
+1. Go to [Railway](https://railway.app/)
+2. Connect your GitHub repository
+3. Deploy as a web service
+4. Set environment variables in Railway dashboard
+
+### Option 3: Simplify Chatbot (Remove scikit-learn)
+
+If scikit-learn continues to cause issues, you can create a simpler chatbot:
+
+```python
+# Simple keyword-based chatbot instead of ML-based
+def find_best_match(user_query: str) -> Tuple[str, float]:
+    """Simple keyword-based matching"""
+    user_query = user_query.lower().strip()
+    
+    # Simple keyword matching
+    keywords = {
+        "policy": "You can view and manage your policies in the user dashboard.",
+        "claim": "To file a claim, please visit the claims section.",
+        "health": "We offer comprehensive health insurance policies.",
+        "vehicle": "Our vehicle insurance covers cars, bikes, and commercial vehicles.",
+        "home": "Protect your home with our comprehensive home insurance.",
+        "travel": "Travel with peace of mind with our travel insurance.",
+        "business": "We offer various business insurance solutions.",
+        "premium": "Premium calculations are available in our calculator section.",
+        "contact": "You can contact our support team at support@insure.com",
+        "help": "I'm here to help! You can ask about policies, claims, or insurance types."
+    }
+    
+    for keyword, response in keywords.items():
+        if keyword in user_query:
+            return response, 0.8
+    
+    return "I'm sorry, I don't have an answer for that. Please contact our support team.", 0.0
 ```
 
 ## Frontend Configuration
@@ -171,20 +264,25 @@ Expected response:
 
 ### Common Issues
 
-1. **CORS Errors**
+1. **scikit-learn Compilation Errors**
+   - Use the updated requirements.txt with older versions
+   - Try the alternative deployment strategies above
+   - Consider using Railway instead of Render
+
+2. **CORS Errors**
    - Ensure `FRONTEND_URL` is set correctly in Render
    - Check that your Vercel domain is included in allowed origins
 
-2. **Service Not Starting**
+3. **Service Not Starting**
    - Check the build logs in Render
    - Ensure all required files are in the repository
    - Verify the start command is correct
 
-3. **Import Errors**
+4. **Import Errors**
    - Make sure all dependencies are in `requirements.txt`
    - Check Python version compatibility
 
-4. **File Not Found Errors**
+5. **File Not Found Errors**
    - Ensure `insurance_dataset.csv` is in the repository
    - Check file paths in the code
 
@@ -252,4 +350,5 @@ If you encounter issues:
 2. Review service logs
 3. Test endpoints individually
 4. Verify environment variables
-5. Check CORS configuration 
+5. Check CORS configuration
+6. Try alternative deployment strategies if scikit-learn fails 
