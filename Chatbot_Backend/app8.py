@@ -1,8 +1,11 @@
-import csv
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import numpy as np
 import logging
-from typing import Tuple
+from typing import Tuple, Dict, Any
 import json
 import os
 
@@ -50,88 +53,58 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
-class UltraSimpleFAQChatBot:
-    """Ultra-simple FAQ Chatbot using basic keyword matching"""
+class FAQChatBot:
+    """FAQ Chatbot using TF-IDF and cosine similarity"""
     
     def __init__(self, csv_path: str):
-        self.faq_data = self._load_data(csv_path)
-        self._create_keyword_index()
+        self.faq_df = self._load_data(csv_path)
+        self.vectorizer = TfidfVectorizer(stop_words='english')
+        self._train_model()
         
-    def _load_data(self, csv_path: str) -> list:
-        """Load FAQ data using standard CSV module"""
+    def _load_data(self, csv_path: str) -> pd.DataFrame:
+        """Load and preprocess FAQ data"""
         try:
-            faq_data = []
-            with open(csv_path, 'r', encoding='utf-8') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    if 'Question' in row and 'Answer' in row and row['Question'] and row['Answer']:
-                        faq_data.append({
-                            'question': row['Question'].strip().lower(),
-                            'answer': row['Answer'].strip()
-                        })
+            df = pd.read_csv(csv_path)
+            assert not df.empty, "Dataset is empty"
+            assert 'Question' in df.columns and 'Answer' in df.columns, "Missing required columns"
             
-            if not faq_data:
-                raise ValueError("No valid FAQ data found")
-                
-            logger.info(f"Loaded {len(faq_data)} FAQ entries")
-            return faq_data
+            df = df.dropna(subset=['Question', 'Answer'])
+            df['Question'] = df['Question'].str.strip().str.lower()
+            return df
             
         except Exception as e:
             logger.error(f"Error loading data: {str(e)}")
             raise
 
-    def _create_keyword_index(self):
-        """Create a simple keyword index for matching"""
-        self.keyword_index = {}
-        
-        for idx, entry in enumerate(self.faq_data):
-            question = entry['question']
-            words = question.split()
-            
-            for word in words:
-                # Clean word and only consider meaningful words
-                clean_word = ''.join(c for c in word if c.isalnum()).lower()
-                if len(clean_word) > 3:  # Only consider words longer than 3 characters
-                    if clean_word not in self.keyword_index:
-                        self.keyword_index[clean_word] = []
-                    self.keyword_index[clean_word].append(idx)
+    def _train_model(self):
+        """Train the TF-IDF model"""
+        questions = self.faq_df["Question"].tolist()
+        self.tfidf_matrix = self.vectorizer.fit_transform(questions)
         
     def find_best_match(self, user_query: str, threshold: float = 0.2) -> Tuple[str, float]:
-        """Find the best matching FAQ answer using simple keyword matching"""
+        """Find the best matching FAQ answer with confidence score"""
         user_query = user_query.lower().strip()
-        user_words = user_query.split()
         
-        # Score each FAQ entry based on keyword matches
-        scores = {}
-        
-        for word in user_words:
-            # Clean word
-            clean_word = ''.join(c for c in word if c.isalnum()).lower()
-            if len(clean_word) > 3 and clean_word in self.keyword_index:
-                for idx in self.keyword_index[clean_word]:
-                    if idx not in scores:
-                        scores[idx] = 0
-                    scores[idx] += 1
-        
-        if not scores:
+        # If not a navigation command, proceed with regular FAQ matching
+        try:
+            query_vec = self.vectorizer.transform([user_query])
+            similarity_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
+            
+            best_match_idx = np.argmax(similarity_scores)
+            confidence = similarity_scores[best_match_idx]
+            
+            if confidence > threshold:
+                return self.faq_df.iloc[best_match_idx]["Answer"], float(confidence)
             return "I'm sorry, I don't have an answer for that. Please contact our support team.", 0.0
-        
-        # Find the entry with the highest score
-        best_idx = max(scores, key=scores.get)
-        best_score = scores[best_idx]
-        
-        # Calculate confidence (normalize by number of words in user query)
-        confidence = min(best_score / len(user_words), 1.0)
-        
-        if confidence > threshold:
-            return self.faq_data[best_idx]["answer"], float(confidence)
-        
-        return "I'm sorry, I don't have an answer for that. Please contact our support team.", 0.0
+            
+        except Exception as e:
+            logger.error(f"Error finding match: {str(e)}")
+            return "I encountered an error processing your request.", 0.0
 
 # Initialize chatbot
 try:
-    chatbot = UltraSimpleFAQChatBot("insurance_dataset.csv")
-    logger.info("Ultra-simple FAQ Chatbot initialized successfully")
+    chatbot = FAQChatBot("insurance_dataset.csv")
+    logger.info("FAQ Chatbot initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize chatbot: {str(e)}")
     raise
