@@ -18,14 +18,40 @@ app = Flask(__name__)
 # Get the frontend URL from environment variable
 prod_frontend_url = os.environ.get("FRONTEND_URL")
 
-# Define allowed origins
-# We always allow localhost for development.
-# If a production URL is set, we add that to the list.
-allowed_origins = ["http://localhost:3000"]
+# Define allowed origins - include common Vercel domains
+allowed_origins = [
+    "http://localhost:3000",
+    "https://localhost:3000"
+]
+
+# Add production frontend URL if provided
 if prod_frontend_url:
     allowed_origins.append(prod_frontend_url)
 
-CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+# Add common Vercel domains
+vercel_domains = [
+    "https://*.vercel.app",
+    "https://*.vercel.app/*"
+]
+allowed_origins.extend(vercel_domains)
+
+# Configure CORS with more permissive settings for development
+CORS(app, 
+     resources={r"/api/*": {"origins": allowed_origins}},
+     supports_credentials=True,
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"])
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in allowed_origins or any(origin.endswith('.vercel.app') for origin in allowed_origins if '*' in origin):
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 class FAQChatBot:
     """FAQ Chatbot using TF-IDF and cosine similarity"""
@@ -88,9 +114,6 @@ def handle_chat():
     """Handle chat requests"""
     if request.method == "OPTIONS":
         response = jsonify({"status": "preflight"})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "*")
-        response.headers.add("Access-Control-Allow-Methods", "*")
         return response
         
     try:

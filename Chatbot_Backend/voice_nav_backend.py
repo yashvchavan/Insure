@@ -12,7 +12,41 @@ app = Flask(__name__)
 
 # Get the frontend URL from environment variable, with fallback for local development
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-CORS(app, origins=[frontend_url])  # Enable CORS for frontend-backend communication
+
+# Define allowed origins - include common Vercel domains
+allowed_origins = [
+    "http://localhost:3000",
+    "https://localhost:3000"
+]
+
+# Add production frontend URL if provided
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
+# Add common Vercel domains
+vercel_domains = [
+    "https://*.vercel.app",
+    "https://*.vercel.app/*"
+]
+allowed_origins.extend(vercel_domains)
+
+# Configure CORS with more permissive settings
+CORS(app, 
+     origins=allowed_origins,
+     supports_credentials=True,
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"])
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in allowed_origins or any(origin.endswith('.vercel.app') for origin in allowed_origins if '*' in origin):
+        response.headers.add('Access-Control-Allow-Origin', origin)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 # Ensure necessary folders exist
 UPLOAD_FOLDER = "uploads"
@@ -164,9 +198,12 @@ def debug_command(text):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/test-command", methods=["POST"])
+@app.route("/test-command", methods=["POST", "OPTIONS"])
 def test_command():
     """Test endpoint to verify command matching"""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "preflight"}), 200
+        
     try:
         data = request.get_json()
         if not data or 'text' not in data:
@@ -176,11 +213,15 @@ def test_command():
         result = process_command(text)
         return jsonify({"response": result})
     except Exception as e:
+        print(f"❌ Error in test-command: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/voice-command", methods=["POST"])
+@app.route("/voice-command", methods=["POST", "OPTIONS"])
 def voice_command():
     """Handles voice commands by processing uploaded audio."""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "preflight"}), 200
+        
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -222,5 +263,10 @@ def get_audio(filename):
         return send_file(audio_path, mimetype="audio/mp3")
     return jsonify({"error": "File not found"}), 404
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({"status": "healthy", "service": "voice-navigation"}), 200
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5001) 
+    app.run(host="0.0.0.0", port=5001, debug=True) 
