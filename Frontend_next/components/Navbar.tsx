@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/navigation-menu"
 import { User, ChevronDown, FileText, Lock, Phone, Mail, MessageSquare, Bell, Menu, X } from "lucide-react"
 import useAuth from "@/context/store"
+import Image from "next/image"
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -67,11 +68,18 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
             <motion.div
-              className="h-8 w-8 rounded-full bg-primary flex items-center justify-center"
+              className="h-8 w-8 rounded-full bg-primary flex items-center justify-center overflow-hidden"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Lock className="h-4 w-4 text-primary-foreground" />
+              <Image
+                src="/images/logo.png"
+                alt="Insure Logo"
+                width={32}
+                height={32}
+                className="object-contain h-8 w-8"
+                priority
+              />
             </motion.div>
             <span className="hidden font-bold sm:inline-block text-xl">INSURE</span>
           </Link>
