@@ -2,7 +2,7 @@
 const nextConfig = {
     // Enable experimental features for better cookie handling
     experimental: {
-        serverComponentsExternalPackages: ['bcryptjs']
+        serverExternalPackages: ['bcryptjs']
     },
     
     // Add security headers

@@ -120,10 +120,17 @@ export default function ChatbotButton() {
       }
     } catch (error) {
       console.error("Error communicating with chatbot API:", error);
-      setMessages((prev) => [...prev, { 
-        text: `Sorry, I'm having trouble connecting. Please try again. (Error: ${error.message})`, 
-        isUser: false 
-      }]);
+      let errorMessage = "Sorry, I'm having trouble connecting. Please try again.";
+      if (error instanceof Error) {
+        errorMessage += ` (Error: ${error.message})`;
+      }
+      setMessages((prev) => [
+        ...prev,
+        { 
+          text: errorMessage, 
+          isUser: false 
+        }
+      ]);
     }
   };
 
@@ -229,4 +236,85 @@ export default function ChatbotButton() {
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.isUser 
+                        ? "bg-primary text-primary-foreground rounded-tr-none" 
+                        : "bg-muted rounded-tl-none"
+                    } ${message.action === 'navigate' ? 'cursor-pointer hover:bg-blue-100' : ''}`}
+                    onClick={() => {
+                      if (message.action === 'navigate') {
+                        if (message.url) {
+                          window.location.href = message.url;
+                        }
+                      }
+                    }}
+                  >
+                    {!message.isUser && (
+                      <div className="flex items-center mb-1">
+                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2">
+                          <MessageSquare className="h-3 w-3 text-primary" />
+                        </div>
+                        <span className="text-xs font-medium">AI Assistant</span>
+                      </div>
+                    )}
+                    <p className="text-sm">{message.text}</p>
+                    {message.action === 'navigate' && (
+                      <p className="text-xs mt-1 text-blue-600">Click here to navigate</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input area */}
+            <div className="p-4 border-t bg-background">
+              <div className="flex gap-2">
+                <Input
+                  placeholder={isListening ? "Listening... Speak now" : "Type your message..."}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && inputValue.trim()) {
+                      handleSendMessage(inputValue)
+                      setInputValue("")
+                    }
+                  }}
+                />
+                <Button 
+                  size="icon" 
+                  onClick={() => {
+                    if (inputValue.trim()) {
+                      handleSendMessage(inputValue)
+                      setInputValue("")
+                    }
+                  }}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant={isListening ? "default" : "outline"}
+                  onClick={toggleListening}
+                  disabled={!speechSupported.recognition}
+                >
+                  {isListening ? (
+                    <div className="relative">
+                      <Mic className="h-4 w-4" />
+                      <span className="absolute flex h-3 w-3 top-0 right-0 -mt-1 -mr-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                      </span>
+                    </div>
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
