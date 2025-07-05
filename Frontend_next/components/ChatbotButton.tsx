@@ -7,6 +7,14 @@ import { MessageSquare, X, Send, Mic, Volume2, VolumeX } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import useAuth from "@/context/store"
 
+// Type declarations for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 export default function ChatbotButton() {
   const { activeModal, setActiveModal } = useAuth()
   const isOpen = activeModal === 'chatbot'
