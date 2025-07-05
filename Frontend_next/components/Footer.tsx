@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react"
 
@@ -46,14 +47,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <motion.h3 
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
-            >
-              InsureEase
-            </motion.h3>
+            <Link href="/">
+              
+              <Image
+                src="/images/logo.png"
+                alt="Insure Logo"
+                width={200}
+                height={50}
+                className="object-contain h-200 w-50"
+                priority
+              />
+          </Link>
             <motion.p 
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}

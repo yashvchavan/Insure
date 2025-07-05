@@ -66,22 +66,16 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between mx-auto">
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <motion.div
-              className="h-8 w-8 rounded-full bg-primary flex items-center justify-center overflow-hidden"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
+          <Link href="/">
+            
               <Image
                 src="/images/logo.png"
                 alt="Insure Logo"
-                width={32}
-                height={32}
-                className="object-contain h-8 w-8"
+                width={200}
+                height={50}
+                className="object-contain h-200 w-50"
                 priority
               />
-            </motion.div>
-            <span className="hidden font-bold sm:inline-block text-xl">INSURE</span>
           </Link>
         </div>
 
