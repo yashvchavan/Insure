@@ -1,4 +1,4 @@
-# 🛡️ InsureEase - Modern Insurance Platform
+# 🛡️ Insure - Modern Insurance Platform
 
 A comprehensive insurance management platform built with Next.js, Flask, and MongoDB. InsureEase provides a seamless experience for users to browse, apply for, and manage insurance policies with AI-powered chatbot assistance and voice navigation.
 
