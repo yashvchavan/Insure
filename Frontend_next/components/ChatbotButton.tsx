@@ -93,11 +93,9 @@ export default function ChatbotButton() {
   
     try {
       const apiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || "http://localhost:5000/api/chat";
-      
       // Debug logging
       console.log("Chatbot API URL:", apiUrl);
-      console.log("Environment variable:", process.env.NEXT_PUBLIC_CHATBOT_API_URL);
-      
+      console.log("Chatbot API URL (from env):", process.env.NEXT_PUBLIC_CHATBOT_API_URL);
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
