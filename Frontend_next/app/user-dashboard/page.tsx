@@ -33,11 +33,7 @@ const activityData = [
   { name: "Jun", claims: 3, renewals: 2 },
 ];
 
-const notifications = [
-  { id: 1, title: "Policy Renewal", message: "Your health policy is due for renewal in 15 days", date: "2023-06-15" },
-  { id: 2, title: "Claim Update", message: "Your vehicle claim has been approved", date: "2023-06-10" },
-  { id: 3, title: "New Document", message: "A new document has been added to your vault", date: "2023-06-05" },
-];
+const notifications: { id: number; title: string; message: string; date: string; }[] = [];
 
 // Helper function to calculate renewal date (1 year from start date)
 const calculateRenewalDate = (startDate: string) => {
@@ -68,6 +64,8 @@ export default function UserDashboard() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [renewingPolicy, setRenewingPolicy] = useState<string | null>(null);
+  const [claims, setClaims] = useState<any[]>([]);
+  const [activityData, setActivityData] = useState<any[]>([]);
   const { user } = useAuth() as { user: { username: string ,id:string} | null } || { user: null };
   const router = useRouter();
 
@@ -76,6 +74,7 @@ export default function UserDashboard() {
       router.push("/user-login");
     } else if (user) {
       fetchApprovedPolicies();
+      fetchUserClaims();
     }
   }, [user, router]);
 
@@ -107,6 +106,64 @@ export default function UserDashboard() {
     setRenewingPolicy(policyId);
     router.push(`/renew-policy?policyId=${policyId}`);
   };
+
+  const fetchUserClaims = async () => {
+    try {
+      const response = await fetch(`/api/user-claims?userId=${user?.id}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setClaims(data.claims || []);
+    } catch (error) {
+      console.error("Failed to load claims:", error);
+    }
+  };
+
+  // Helper to get last 6 months labels
+  const getLast6Months = () => {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        name: d.toLocaleString('default', { month: 'short' }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+      });
+    }
+    return months;
+  };
+
+  // Aggregate claims and renewals by month
+  useEffect(() => {
+    const months = getLast6Months();
+    // Claims aggregation
+    const claimsByMonth: Record<string, number> = {};
+    claims.forEach((claim) => {
+      if (!claim.createdAt) return;
+      const date = new Date(claim.createdAt);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      claimsByMonth[key] = (claimsByMonth[key] || 0) + 1;
+    });
+    // Renewals aggregation
+    const renewalsByMonth: Record<string, number> = {};
+    policies.forEach((policy) => {
+      const dateStr = policy.renewalDate || policy.startDate;
+      if (!dateStr) return;
+      const date = new Date(dateStr);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      renewalsByMonth[key] = (renewalsByMonth[key] || 0) + 1;
+    });
+    // Build activity data for chart
+    const activity = months.map(({ name, year, month }) => {
+      const key = `${year}-${month}`;
+      return {
+        name,
+        claims: claimsByMonth[key] || 0,
+        renewals: renewalsByMonth[key] || 0,
+      };
+    });
+    setActivityData(activity);
+  }, [claims, policies]);
 
   
 
@@ -198,16 +255,22 @@ export default function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {notifications.map((notification) => (
-                    <div key={notification.id} className="flex items-start p-3 rounded-lg border">
-                      <BellIcon className="h-5 w-5 mr-3 text-primary" />
-                      <div>
-                        <h4 className="font-medium">{notification.title}</h4>
-                        <p className="text-sm text-muted-foreground">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
-                      </div>
+                  {notifications.length === 0 ? (
+                    <div className="flex items-center justify-center h-20 text-muted-foreground">
+                      No notifications
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((notification) => (
+                      <div key={notification.id} className="flex items-start p-3 rounded-lg border">
+                        <BellIcon className="h-5 w-5 mr-3 text-primary" />
+                        <div>
+                          <h4 className="font-medium">{notification.title}</h4>
+                          <p className="text-sm text-muted-foreground">{notification.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -229,7 +292,7 @@ export default function UserDashboard() {
                     <p className="text-muted-foreground">
                       No approved policies found. Your applications will appear here once approved.
                     </p>
-                    <Link href="/apply" className="mt-4 inline-block">
+                    <Link href="/policy/health" className="mt-4 inline-block">
                       <Button variant="default">Apply for a Policy</Button>
                     </Link>
                   </div>
@@ -300,14 +363,7 @@ export default function UserDashboard() {
                   <div className="p-4 rounded-lg border">
                     <h3 className="font-medium mb-2">Recent Claims</h3>
                     <div className="space-y-2">
-                      <div className="flex justify-between p-2 rounded bg-muted/30">
-                        <span>Vehicle Damage Claim</span>
-                        <span className="text-amber-600">In Progress</span>
-                      </div>
-                      <div className="flex justify-between p-2 rounded bg-muted/30">
-                        <span>Health Insurance Claim</span>
-                        <span className="text-green-600">Approved</span>
-                      </div>
+                      <p>no claims found</p>
                     </div>
                   </div>
                 </div>
@@ -333,23 +389,7 @@ export default function UserDashboard() {
                     </Link>
                   </div>
 
-                  <div className="p-4 rounded-lg border">
-                    <h3 className="font-medium mb-2">Recent Documents</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center p-2 rounded bg-muted/30">
-                        <FileTextIcon className="h-4 w-4 mr-2" />
-                        <span>Health_Policy_Document.pdf</span>
-                      </div>
-                      <div className="flex items-center p-2 rounded bg-muted/30">
-                        <FileTextIcon className="h-4 w-4 mr-2" />
-                        <span>Vehicle_Insurance_Certificate.pdf</span>
-                      </div>
-                      <div className="flex items-center p-2 rounded bg-muted/30">
-                        <FileTextIcon className="h-4 w-4 mr-2" />
-                        <span>ID_Proof.jpg</span>
-                      </div>
-                    </div>
-                  </div>
+        
                 </div>
               </CardContent>
             </Card>

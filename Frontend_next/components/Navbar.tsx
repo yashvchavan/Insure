@@ -37,16 +37,21 @@ export default function Navbar() {
         credentials: 'include',
       });
   
-      const data = await response.json();
-  
-      if (data.success) {
+      if (response.ok) {
         logout();
-        window.location.href = data.redirectTo;
+        window.location.href = '/user-login';
       } else {
+        const data = await response.json();
         console.error('Logout failed:', data.message);
+        // Still attempt to log out on the client-side
+        logout();
+        window.location.href = '/user-login';
       }
     } catch (error) {
       console.error('Logout error:', error);
+      // Still attempt to log out on the client-side
+      logout();
+      window.location.href = '/user-login';
     }
   };
 
@@ -122,23 +127,17 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Support</NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-3 p-4">
+                  <ul className="grid w-[300px] gap-3 p-4">
                     <NavigationMenuItem>
                       <button onClick={handleCallSupport} className={navigationMenuTriggerStyle()}>
                         <Phone className="mr-2 h-4 w-4" />
-                        Call Us: 123456789
+                        Call Us: +91 9657846967
                       </button>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
                       <button onClick={handleEmailSupport} className={navigationMenuTriggerStyle()}>
                         <Mail className="mr-2 h-4 w-4" />
-                        Email Us: abc@123
-                      </button>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <button onClick={handleChatSupport} className={navigationMenuTriggerStyle()}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Chat Support
+                        Email Us: insure@gmail.com
                       </button>
                     </NavigationMenuItem>
                   </ul>
@@ -156,20 +155,7 @@ export default function Navbar() {
             <DropdownMenuContent align="end" className="w-[300px]">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="max-h-[300px] overflow-auto">
-                <DropdownMenuItem className="flex flex-col items-start">
-                  <div className="font-medium">Policy Renewal</div>
-                  <div className="text-sm text-muted-foreground">Your health policy is due for renewal in 15 days</div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start">
-                  <div className="font-medium">Claim Update</div>
-                  <div className="text-sm text-muted-foreground">Your vehicle claim has been approved</div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start">
-                  <div className="font-medium">New Document</div>
-                  <div className="text-sm text-muted-foreground">A new document has been added to your vault</div>
-                </DropdownMenuItem>
-              </div>
+              <p className="text-center p-3">No notifications</p>
             </DropdownMenuContent>
           </DropdownMenu>
 

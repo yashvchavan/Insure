@@ -279,7 +279,7 @@ export default function ApplyPage() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center py-16"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
       <div className="container mx-auto py-12 px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           {isSubmitted ? (
@@ -536,7 +536,7 @@ export default function ApplyPage() {
                           <Input
                             id="annualIncome"
                             type="number"
-                            placeholder="$"
+                            placeholder="₹"
                             value={formData.annualIncome}
                             onChange={(e) => handleInputChange("annualIncome", e.target.value)}
                             required
@@ -590,11 +590,11 @@ export default function ApplyPage() {
                               <SelectValue placeholder="Select coverage amount" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="500000">$500,000</SelectItem>
-                              <SelectItem value="750000">$750,000</SelectItem>
-                              <SelectItem value="1000000">$1,000,000</SelectItem>
-                              <SelectItem value="1500000">$1,500,000</SelectItem>
-                              <SelectItem value="2000000">$2,000,000</SelectItem>
+                              <SelectItem value="500000">₹500,000</SelectItem>
+                              <SelectItem value="750000">₹750,000</SelectItem>
+                              <SelectItem value="1000000">₹1,000,000</SelectItem>
+                              <SelectItem value="1500000">₹1,500,000</SelectItem>
+                              <SelectItem value="2000000">₹2,000,000</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

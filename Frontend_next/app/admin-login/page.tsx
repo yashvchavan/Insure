@@ -87,7 +87,12 @@ export default function AdminLoginPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="ml-2">Logging in...</span>
+                  </div>
+                ) : 'Login'}
               </Button>
             </form>
             <div className="mt-4 text-center">

@@ -82,7 +82,7 @@ export default function CategoryPage() {
 
   const currentCategory = categoryData[category?.toLowerCase()] || categoryData.health;
 
-  if (loading) return <div className="flex justify-center items-center h-screen"><p>Loading...</p></div>;
+  if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   if (error) return <div className="flex justify-center items-center h-screen"><p>Error: {error}</p></div>;
   if (!currentCategory) return <div className="flex justify-center items-center h-screen"><p>No data available for this category</p></div>;
 

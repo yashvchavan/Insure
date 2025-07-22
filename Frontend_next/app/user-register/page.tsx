@@ -19,11 +19,15 @@ export default function UserRegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [phone, setPhone] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const router = useRouter()
   
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true)
+    setError('')
   
     const payload: RegisterRequest = {
       username,
@@ -42,9 +46,13 @@ export default function UserRegisterPage() {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error('Registration Failed:', error.response?.data?.message || error.message);
+        setError(error.response?.data?.message || 'An unexpected error occurred')
       } else {
         console.error('Registration Failed:', error);
+        setError('An unexpected error occurred')
       }
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -66,6 +74,7 @@ export default function UserRegisterPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -76,6 +85,7 @@ export default function UserRegisterPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -87,6 +97,7 @@ export default function UserRegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -98,6 +109,7 @@ export default function UserRegisterPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -109,10 +121,16 @@ export default function UserRegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Register
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="ml-2">Registering...</span>
+                  </div>
+                ) : 'Register'}
               </Button>
             </form>
             <div className="mt-4 text-center">

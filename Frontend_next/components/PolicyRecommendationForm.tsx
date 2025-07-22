@@ -45,30 +45,38 @@ export default function PolicyRecommendationForm({ onClose }: PolicyRecommendati
     setFormData(newFormData);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const getPolicyRecommendation = ({
+    age,
+    bmi,
+    smoker,
+    gender,
+    region,
+  }: typeof formData): string => {
+    const ageNum = parseInt(age);
+    const bmiNum = parseFloat(bmi);
+
+    if (smoker === "yes") {
+      if (bmiNum > 30) {
+        return "Premium Plan - High Risk Smoker";
+      }
+      return "Standard Plan - Smoker";
+    }
+
+    if (ageNum < 30 && bmiNum < 25) {
+      return "Basic Plan - Young & Healthy";
+    } else if (bmiNum > 30) {
+      return "Standard Plan - Overweight";
+    } else {
+      return "Standard Plan";
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/recommend", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          age: parseInt(formData.age),
-          bmi: parseFloat(formData.bmi),
-          sex: formData.gender,
-          smoker: formData.smoker,
-          region: formData.region,
-        }),
-      });
-
-      const data = await response.json();
-      setRecommendation(data.recommended_policy);
-      setSubmitted(true);
-    } catch (error) {
-      console.error("Error fetching recommendation:", error);
-    }
+    const result = getPolicyRecommendation(formData);
+    setRecommendation(result);
+    setSubmitted(true);
   };
 
   return (
@@ -98,29 +106,50 @@ export default function PolicyRecommendationForm({ onClose }: PolicyRecommendati
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="age">Age</Label>
-              <Input 
-                id="age" 
-                type="number" 
-                placeholder="Enter your age" 
-                value={formData.age} 
-                onChange={(e) => handleChange("age", e.target.value.replace(/\D/, ""))} 
-                required 
+              <Input
+                id="age"
+                type="number"
+                placeholder="Enter your age"
+                value={formData.age}
+                onChange={(e) => handleChange("age", e.target.value.replace(/\D/, ""))}
+                required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="height">Height (cm)</Label>
-              <Input id="height" type="number" placeholder="Enter height in cm" value={formData.height} onChange={(e) => handleChange("height", e.target.value)} required />
+              <Input
+                id="height"
+                type="number"
+                placeholder="Enter height in cm"
+                value={formData.height}
+                onChange={(e) => handleChange("height", e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="weight">Weight (kg)</Label>
-              <Input id="weight" type="number" placeholder="Enter weight in kg" value={formData.weight} onChange={(e) => handleChange("weight", e.target.value)} required />
+              <Input
+                id="weight"
+                type="number"
+                placeholder="Enter weight in kg"
+                value={formData.weight}
+                onChange={(e) => handleChange("weight", e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="bmi">BMI (Auto-calculated)</Label>
-              <Input id="bmi" type="number" step="0.1" placeholder="BMI will be calculated" value={formData.bmi} readOnly />
+              <Input
+                id="bmi"
+                type="number"
+                step="0.1"
+                placeholder="BMI will be calculated"
+                value={formData.bmi}
+                readOnly
+              />
             </div>
 
             <div className="space-y-2">

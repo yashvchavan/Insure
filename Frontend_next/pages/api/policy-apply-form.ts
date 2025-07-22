@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const application: ApplicationData = {
       ...body,
       status: 'under_review',
-      applicationId: `APP-${Math.floor(Math.random() * 1000000)}`,
+      applicationId: `APP-₹{Math.floor(Math.random() * 1000000)}`,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

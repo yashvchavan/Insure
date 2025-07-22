@@ -40,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         name: policy.name,
         rating: policy.rating || 4.5, // Default rating if not specified
         featuredPolicy: policy.featuredPolicy || `${policy.name} Plan`,
-        coverage: policy.coverage || "$500K", // Default coverage if not specified
-        startingAt: policy.startingAt || "$100/month", // Default price if not specified
+        coverage: policy.coverage || "₹500K", // Default coverage if not specified
+        startingAt: policy.startingAt || "₹100/month", // Default price if not specified
         image: policy.image
       }));
 

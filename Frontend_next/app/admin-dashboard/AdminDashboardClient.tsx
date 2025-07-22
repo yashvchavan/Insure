@@ -115,10 +115,11 @@ export default function AdminDashboard() {
     { _id: number; name: string; category: string; subcribers:number;revenue:number,}[]
   >([]);
   const [users, setUsers] = useState<
-    { applicationId: string; userId: string; policyId: string; startDate: number; email: string ;status: string}[]
+    { applicationId: string; userId: string; policyId: string; startDate: string; email: string ;status: string}[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [policyStatisticsData, setPolicyStatisticsData] = useState<any[]>([]);
 
   const searchParams = useSearchParams();
   const successMessage = searchParams ? searchParams.get("success") : null;
@@ -136,6 +137,35 @@ export default function AdminDashboard() {
       router.push('/admin-login');
     }
   }, [isAuthenticated, adminEmail, router]);
+
+  const preparePolicyStatistics = (applications: Application[]) => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      return {
+        month: format(d, 'MMM'),
+        year: d.getFullYear(),
+        newPolicies: 0,
+        renewals: Math.floor(Math.random() * 15) + 30, // Placeholder
+        cancellations: Math.floor(Math.random() * 5) + 5, // Placeholder
+      };
+    }).reverse();
+
+    applications.forEach(app => {
+      if (app.status === 'approved' && app.startDate) {
+        const appDate = new Date(app.startDate);
+        const monthStr = format(appDate, 'MMM');
+        const year = appDate.getFullYear();
+        const monthData = months.find(m => m.month === monthStr && m.year === year);
+        if (monthData) {
+          monthData.newPolicies += 1;
+        }
+      }
+    });
+
+    console.log('Policy Statistics (months):', months);
+    return months;
+  };
 
   const fetchClaims = async () => {
     try {
@@ -178,7 +208,7 @@ export default function AdminDashboard() {
     : 0; // Simplified
 
   // Prepare policy statistics data
-  const preparePolicyStatistics = () => {
+  const DpreparePolicyStatistics = () => {
     // Group by month - this is simplified, you'd need actual dates in your data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     return months.map(month => ({
@@ -189,27 +219,9 @@ export default function AdminDashboard() {
     }));
   };
 
-  const policyStatisticsData = preparePolicyStatistics();
+  const DpolicyStatisticsData = DpreparePolicyStatistics();
 
-  // Prepare claims overview data
-  const prepareClaimsOverview = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map(month => {
-      const submitted = claims.filter(claim => {
-        // Simplified - you'd need to check actual dates
-        return true;
-      }).length;
-      
-      return {
-        month,
-        submitted,
-        approved: Math.floor(submitted * 0.7), // Replace with actual approved count
-        rejected: Math.floor(submitted * 0.3) // Replace with actual rejected count
-      };
-    });
-  };
-
-  const claimsOverviewData = prepareClaimsOverview();
+  
 
   const handleApproveClaim = async (claimId: string) => {
     try {
@@ -370,7 +382,10 @@ export default function AdminDashboard() {
     try{
       console.log(adminEmail);
       const response = await axios.get(`/api/display-application?email=${adminEmail}`);
-      setUsers(response.data.application || []);
+      const applications = response.data.application || [];
+      console.log('Fetched applications:', applications);
+      setUsers(applications);
+      setPolicyStatisticsData(preparePolicyStatistics(applications));
       console.log("Application:", response.data.application);
       setLoading(false);
     }catch (error) {
@@ -400,7 +415,11 @@ export default function AdminDashboard() {
     console.log("Policies:", policies);
   }, [policies]);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return (
+    <div className="flex justify-center items-center py-16">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  );
   if (error) return <p>Error: {error}</p>;
 
   return (
@@ -487,33 +506,13 @@ export default function AdminDashboard() {
                       <Tooltip />
                       <Legend />
                       <Bar dataKey="newPolicies" fill="#8884d8" name="New Policies" />
-                      <Bar dataKey="renewals" fill="#82ca9d" name="Renewals" />
-                      <Bar dataKey="cancellations" fill="#ff7c7c" name="Cancellations" />
+                      
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Claims Overview</CardTitle>
-                  <CardDescription>Submitted, approved, and rejected claims over the last 6 months</CardDescription>
-                </CardHeader>
-                <CardContent className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={claimsOverviewData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="submitted" stroke="#8884d8" name="Submitted" />
-                      <Line type="monotone" dataKey="approved" stroke="#82ca9d" name="Approved" />
-                      <Line type="monotone" dataKey="rejected" stroke="#ff7c7c" name="Rejected" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+
             </TabsContent>
 
             <TabsContent value="policies">
@@ -638,7 +637,7 @@ export default function AdminDashboard() {
                           <TableRow key={claim._id}>
                             <TableCell>{claim.claimId}</TableCell>
                             <TableCell>{claim.policyName}</TableCell>
-                            <TableCell>${claim.claimAmount}</TableCell>
+                            <TableCell>₹{claim.claimAmount}</TableCell>
                             <TableCell>{format(new Date(claim.incidentDate), 'MMM d, yyyy')}</TableCell>
                             <TableCell>
                               {claim.status === 'submitted' && (
@@ -823,7 +822,7 @@ export default function AdminDashboard() {
                   <div className="space-y-2">
                     <p><span className="font-medium">Occupation:</span> {selectedApplication.occupation}</p>
                     <p><span className="font-medium">Employment Status:</span> {selectedApplication.employmentStatus}</p>
-                    <p><span className="font-medium">Annual Income:</span> ${selectedApplication.annualIncome}</p>
+                    <p><span className="font-medium">Annual Income:</span> ₹{selectedApplication.annualIncome}</p>
                     <p><span className="font-medium">Employer:</span> {selectedApplication.employerName || 'N/A'}</p>
                     <p><span className="font-medium">Years Employed:</span> {selectedApplication.yearsEmployed || 'N/A'}</p>
                   </div>
@@ -831,7 +830,7 @@ export default function AdminDashboard() {
                   <h3 className="font-semibold mt-4 mb-2">Policy Details</h3>
                   <div className="space-y-2">
                     <p><span className="font-medium">Policy ID:</span> {selectedApplication.policyId}</p>
-                    <p><span className="font-medium">Coverage Amount:</span> ${selectedApplication.coverageAmount}</p>
+                    <p><span className="font-medium">Coverage Amount:</span> ₹{selectedApplication.coverageAmount}</p>
                     <p><span className="font-medium">Start Date:</span> {selectedApplication.startDate}</p>
                     <p><span className="font-medium">Payment Frequency:</span> {selectedApplication.paymentFrequency}</p>
                   </div>
@@ -903,7 +902,7 @@ export default function AdminDashboard() {
                     <p><span className="font-medium">Insurance Company:</span> 
                       {insuranceCompanies.find(c => c.id === selectedClaim.insuranceCompany)?.name || selectedClaim.insuranceCompany}
                     </p>
-                    <p><span className="font-medium">Claim Amount:</span> ${selectedClaim.claimAmount}</p>
+                    <p><span className="font-medium">Claim Amount:</span> ₹{selectedClaim.claimAmount}</p>
                     <p><span className="font-medium">Incident Date:</span> 
                       {format(new Date(selectedClaim.incidentDate), 'MMM d, yyyy')}
                     </p>

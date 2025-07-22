@@ -21,11 +21,14 @@ export default function UserLoginPage() {
   const [password, setPassword] = useState("")
   
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true)
+    setError('')
     
     try {
       const response = await fetch('/api/login', {
@@ -50,9 +53,11 @@ export default function UserLoginPage() {
         window.location.href = '/';
       } else {
         setError(data.message || 'Login failed');
+        setIsLoading(false)
       }
     } catch (err) {
       setError('Network error - please try again');
+      setIsLoading(false)
       console.error('Login error:', err);
     }
   };
@@ -74,6 +79,7 @@ export default function UserLoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -85,10 +91,16 @@ export default function UserLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Login
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="ml-2">Logging in...</span>
+                  </div>
+                ) : 'Login'}
               </Button>
             </form>
             <div className="mt-4 text-center">
